@@ -1,0 +1,68 @@
+server:
+  port: 8080
+
+# database setting
+spring:
+  servlet:
+    multipart:
+      max-file-size: 3MB  # 1개의 파일의 최대 용량
+      max-request-size: 20MB  # 1번의 요청의 보낼 수 있는 최대 용량
+
+  mail:
+    host: smtp.naver.com
+    port: 465
+    username: puppycompany
+    password: gksrlqja1!
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          starttls:
+            enable: true
+    default-encoding: UTF-8
+    debug: true
+
+
+
+  datasource:
+    url: jdbc:mariadb://localhost:3306/ReactNativeStudyAPI
+    username: root
+    password: mariadb
+    driver-class-name: org.mariadb.jdbc.Driver
+  jpa:
+    # DBMS dialect setting
+    database-platform: org.hibernate.dialect.MariaDB106Dialect
+    hibernate:
+      # ddl ??? ??? ????...
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true # SQL ?? ??? ??? ??
+    database: mysql
+
+# log level setting
+logging:
+  level:
+    root: info
+    com.yp.puppy.api: debug
+    org.hibernate.SQL: debug
+
+
+
+
+yp:
+  mail:
+    host: puppycompany@naver.com
+
+#jwt:
+#  secret: L5lgHTj6cc23ZlmOL6objRvHlgq02O5hpI4gxCqi/8sJM7amf/pg6UGUUPZausFL9QvBiW4GACdJ0GvJUOnMVg==
+
+file:
+  upload-dir: /Users/jehoon/Desktop/puppy-img
+
+sns:
+  kakao:
+    app-key: 295c9ffbf04d3e3990d4b564b87e7a7d
+    redirect-url: http://localhost:8888/oauth/kakao

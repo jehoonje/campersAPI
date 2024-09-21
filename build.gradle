@@ -1,0 +1,87 @@
+buildscript {
+    ext {
+        queryDslVersion = "5.0.0"
+    }
+}
+
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '2.7.12'
+    id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+    // QueryDSL 플러그인 주석 처리
+    // id "com.ewerk.gradle.plugins.querydsl" version "1.0.10"
+}
+
+jar {
+    // 불필요한 plain jar 생성 설정 비활성화
+    enabled = false
+}
+
+group = 'com.yp'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly 'org.projectlombok:lombok'
+    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    // 쿼리파라미터 추가 외부로그 남기기
+    implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.5.8'
+
+    // 이메일 전송 라이브러리
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+    // 스프링 시큐리티 모듈 주석 처리
+    // implementation 'org.springframework.boot:spring-boot-starter-security'
+
+    // QueryDSL 관련 의존성 주석 처리
+    /*
+    // querydsl 추가
+    implementation "com.querydsl:querydsl-jpa:${queryDslVersion}"
+    annotationProcessor "com.querydsl:querydsl-apt:${queryDslVersion}"
+    */
+
+    // json web token 라이브러리 주석 처리
+    /*
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.2'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.11.2'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.11.2'
+    */
+}
+
+tasks.named('test') {
+    //	useJUnitPlatform()
+    exclude('**/*')
+}
+
+// QueryDSL 관련 설정 주석 처리
+/*
+def querydslDir = "$buildDir/generated/querydsl"
+querydsl {
+    jpa = true
+    querydslSourcesDir = querydslDir
+}
+sourceSets {
+    main.java.srcDir querydslDir
+}
+configurations {
+    querydsl.extendsFrom compileClasspath
+}
+compileQuerydsl {
+    options.annotationProcessorPath = configurations.querydsl
+}
+*/
