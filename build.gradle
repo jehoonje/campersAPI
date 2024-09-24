@@ -8,13 +8,17 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '2.7.12'
     id 'io.spring.dependency-management' version '1.0.15.RELEASE'
-    // QueryDSL 플러그인 주석 처리
-    // id "com.ewerk.gradle.plugins.querydsl" version "1.0.10"
 }
 
 jar {
-    // 불필요한 plain jar 생성 설정 비활성화
+    // plain jar 생성을 비활성화하여 Spring Boot 실행 jar만 생성되도록 설정
     enabled = false
+
+    manifest {
+        attributes(
+                'Main-Class': 'com.yp.MainApplication' // 실제 메인 클래스 경로로 수정
+        )
+    }
 }
 
 group = 'com.yp'
@@ -32,43 +36,53 @@ repositories {
 }
 
 dependencies {
+    // Spring Boot Starter Dependencies
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // Lombok for annotations
     compileOnly 'org.projectlombok:lombok'
-    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
     annotationProcessor 'org.projectlombok:lombok'
+
+    // MariaDB Driver
+    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+
+    // Spring Boot Starter for testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
-    // 쿼리파라미터 추가 외부로그 남기기
+    // Query Parameters Logging (P6Spy)
     implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.5.8'
 
-    // 이메일 전송 라이브러리
+    // Email Sending Library
     implementation 'org.springframework.boot:spring-boot-starter-mail'
 
-    // 스프링 시큐리티 모듈 주석 처리
-    // implementation 'org.springframework.boot:spring-boot-starter-security'
-
-    // QueryDSL 관련 의존성 주석 처리
+    // 주석 처리된 스프링 시큐리티와 JWT 의존성 (필요하면 주석 해제)
     /*
-    // querydsl 추가
-    implementation "com.querydsl:querydsl-jpa:${queryDslVersion}"
-    annotationProcessor "com.querydsl:querydsl-apt:${queryDslVersion}"
-    */
-
-    // json web token 라이브러리 주석 처리
-    /*
+    implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'io.jsonwebtoken:jjwt-api:0.11.2'
     implementation 'io.jsonwebtoken:jjwt-impl:0.11.2'
     implementation 'io.jsonwebtoken:jjwt-jackson:0.11.2'
     */
+
+    // QueryDSL 관련 의존성 (필요할 때 주석 해제)
+    /*
+    implementation "com.querydsl:querydsl-jpa:${queryDslVersion}"
+    annotationProcessor "com.querydsl:querydsl-apt:${queryDslVersion}"
+    */
 }
 
+// Deprecated된 JavaPluginConvention 대신 JavaPluginExtension 사용
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+// 테스트 설정: 모든 테스트를 제외하고 싶을 때 설정
 tasks.named('test') {
-    //	useJUnitPlatform()
     exclude('**/*')
 }
 
-// QueryDSL 관련 설정 주석 처리
+// QueryDSL 관련 설정 (사용 필요 시 주석 해제)
 /*
 def querydslDir = "$buildDir/generated/querydsl"
 querydsl {
