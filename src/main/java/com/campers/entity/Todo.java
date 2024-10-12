@@ -1,4 +1,4 @@
-package com.study.entity;
+package com.campers.entity;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;

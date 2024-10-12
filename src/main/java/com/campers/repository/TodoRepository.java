@@ -1,6 +1,6 @@
-package com.study.repository;
+package com.campers.repository;
 
-import com.study.entity.Todo;
+import com.campers.entity.Todo;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface TodoRepository extends JpaRepository<Todo, Long> {

@@ -1,7 +1,7 @@
-package com.study.controller;
+package com.campers.controller;
 
-import com.study.entity.Todo;
-import com.study.repository.TodoRepository;
+import com.campers.entity.Todo;
+import com.campers.repository.TodoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

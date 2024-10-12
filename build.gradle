@@ -56,6 +56,9 @@ dependencies {
     // Email Sending Library
     implementation 'org.springframework.boot:spring-boot-starter-mail'
 
+    // Jackson XML 데이터 포맷 (버전 생략, Spring Boot 의존성 관리 사용)
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
+
     // 주석 처리된 스프링 시큐리티와 JWT 의존성 (필요하면 주석 해제)
     /*
     implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -70,6 +73,17 @@ dependencies {
     annotationProcessor "com.querydsl:querydsl-apt:${queryDslVersion}"
     */
 }
+
+// Jackson 의존성 버전 강제 설정 (선택 사항)
+configurations.all {
+    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+        if (details.requested.group == 'com.fasterxml.jackson.core' ||
+                details.requested.group == 'com.fasterxml.jackson.dataformat') {
+            details.useVersion '2.13.5'
+        }
+    }
+}
+
 
 // Deprecated된 JavaPluginConvention 대신 JavaPluginExtension 사용
 java {
@@ -99,3 +113,5 @@ compileQuerydsl {
     options.annotationProcessorPath = configurations.querydsl
 }
 */
+
+
