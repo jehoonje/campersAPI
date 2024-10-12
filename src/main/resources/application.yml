@@ -27,7 +27,7 @@ spring:
 
 
   datasource:
-    url: jdbc:mariadb://localhost:3306/ReactNativeStudyAPI
+    url: jdbc:mariadb://localhost:3306/campers
     username: root
     password: mariadb
     driver-class-name: org.mariadb.jdbc.Driver
@@ -66,3 +66,9 @@ sns:
   kakao:
     app-key: 295c9ffbf04d3e3990d4b564b87e7a7d
     redirect-url: http://localhost:8888/oauth/kakao
+
+api:
+  service-key: 1hn+gLY7OOgfyP87C0jNZaIzN31HriUkwkZh7nfUzSLnsHtZlPP4nJwHbq/D30TINtoXvx0VNwOC255+FQA/KA==
+  mobile-os: AND  # "IOS", "AND", "WIN", "ETC"
+  mobile-app: campers
+  response-type: xml  # "xml" 또는 "json"
