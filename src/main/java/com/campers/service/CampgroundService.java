@@ -7,20 +7,21 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.http.ResponseEntity;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.annotation.PostConstruct;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,8 +32,6 @@ public class CampgroundService {
 
     @Autowired
     private CampgroundRepository campgroundRepository;
-
-    private final RestTemplate restTemplate = new RestTemplate();
 
     // 외부 설정에서 서비스 키 주입
     @Value("${api.service-key}")
@@ -46,6 +45,8 @@ public class CampgroundService {
 
     @Value("${api.response-type}")
     private String responseType;
+
+    private final HttpClient httpClient = HttpClient.newHttpClient();
 
     // 애플리케이션 시작 시 자동으로 데이터 업데이트 실행
     @PostConstruct
@@ -88,7 +89,7 @@ public class CampgroundService {
 
                 // URI 빌더로 최종 URL 생성 (추가 인코딩 방지)
                 String finalUrl = UriComponentsBuilder.fromHttpUrl(searchUrl)
-                        .queryParam("serviceKey", serviceKey) // 인코딩되지 않은 키 사용
+                        .queryParam("serviceKey", serviceKey) // 인코딩 제거
                         .queryParam("numOfRows", 10)
                         .queryParam("pageNo", 1)
                         .queryParam("MobileOS", mobileOs)
@@ -102,52 +103,40 @@ public class CampgroundService {
                 // 요청 URL 출력
                 System.out.println("요청 URL: " + finalUrl);
 
-                // 헤더 설정
-                HttpHeaders headers = new HttpHeaders();
-                headers.set("Accept", responseType.equals("json") ? "application/json" : "application/xml");
+                // HTTP 요청 생성
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(finalUrl))
+                        .header("Accept", responseType.equals("json") ? "application/json" : "application/xml")
+                        .GET()
+                        .build();
 
-                // HttpEntity에 헤더 추가
-                HttpEntity<String> entity = new HttpEntity<>(headers);
+                // HTTP 요청 보내기 및 응답 받기
+                HttpResponse<String> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-                // exchange 메서드를 사용하여 요청
-                ResponseEntity<String> response = restTemplate.exchange(finalUrl, HttpMethod.GET, entity, String.class);
-                System.out.println("응답 헤더: " + response.getHeaders());
-                System.out.println("응답 상태 코드: " + response.getStatusCode());
-                System.out.println("응답 본문: " + response.getBody());
+                System.out.println("응답 상태 코드: " + httpResponse.statusCode());
+                System.out.println("응답 본문: " + httpResponse.body());
 
-                if (response.getStatusCode().is2xxSuccessful()) {
+                if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
+                    ObjectMapper objectMapper;
+                    JsonNode root;
+
                     if (responseType.equals("json")) {
-                        // JSON 응답 처리 (생략)
-                        ObjectMapper objectMapper = new ObjectMapper();
-                        JsonNode root = objectMapper.readTree(response.getBody());
-
-                        JsonNode itemsNode = root.path("response").path("body").path("items").path("item");
-                        System.out.println("itemsNode isArray: " + itemsNode.isArray());
-
-                        if (itemsNode.isArray()) {
-                            for (JsonNode item : itemsNode) {
-                                String contentId = item.path("contentid").asText();
-                                Campground campground = fetchCampgroundDetails(contentId);
-                                if (campground != null) {
-                                    campgrounds.add(campground);
-                                }
-                            }
-                        }
+                        objectMapper = new ObjectMapper();
+                        root = objectMapper.readTree(httpResponse.body());
                     } else {
-                        // XML 응답 처리
                         XmlMapper xmlMapper = new XmlMapper();
-                        JsonNode root = xmlMapper.readTree(response.getBody());
+                        root = xmlMapper.readTree(httpResponse.body());
+                    }
 
-                        JsonNode itemsNode = root.path("response").path("body").path("items").path("item");
-                        System.out.println("itemsNode isArray: " + itemsNode.isArray());
+                    JsonNode itemsNode = root.path("response").path("body").path("items").path("item");
+                    System.out.println("itemsNode isArray: " + itemsNode.isArray());
 
-                        if (itemsNode.isArray()) {
-                            for (JsonNode item : itemsNode) {
-                                String contentId = item.path("contentid").asText();
-                                Campground campground = fetchCampgroundDetails(contentId);
-                                if (campground != null) {
-                                    campgrounds.add(campground);
-                                }
+                    if (itemsNode.isArray()) {
+                        for (JsonNode item : itemsNode) {
+                            String contentId = item.path("contentid").asText();
+                            Campground campground = fetchCampgroundDetails(contentId);
+                            if (campground != null) {
+                                campgrounds.add(campground);
                             }
                         }
                     }
@@ -167,7 +156,7 @@ public class CampgroundService {
 
             // URI 빌더로 상세 정보 요청 URL 생성 (추가 인코딩 방지)
             String finalUrl = UriComponentsBuilder.fromHttpUrl(detailUrl)
-                    .queryParam("serviceKey", serviceKey)
+                    .queryParam("serviceKey", serviceKey) // 인코딩 제거
                     .queryParam("MobileOS", mobileOs)
                     .queryParam("MobileApp", mobileApp)
                     .queryParam("contentId", contentId)
@@ -180,59 +169,46 @@ public class CampgroundService {
             // 요청 URL 출력
             System.out.println("상세 정보 요청 URL: " + finalUrl);
 
-            // 헤더 설정
-            HttpHeaders headers = new HttpHeaders();
-            headers.set("Accept", responseType.equals("json") ? "application/json" : "application/xml");
+            // HTTP 요청 생성
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(finalUrl))
+                    .header("Accept", responseType.equals("json") ? "application/json" : "application/xml")
+                    .GET()
+                    .build();
 
-            // HttpEntity에 헤더 추가
-            HttpEntity<String> entity = new HttpEntity<>(headers);
+            // HTTP 요청 보내기 및 응답 받기
+            HttpResponse<String> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-            // exchange 메서드를 사용하여 요청
-            ResponseEntity<String> response = restTemplate.exchange(finalUrl, HttpMethod.GET, entity, String.class);
+            System.out.println("상세 정보 응답 상태 코드: " + httpResponse.statusCode());
+            System.out.println("상세 정보 응답 본문: " + httpResponse.body());
 
-            System.out.println("상세 정보 응답 상태 코드: " + response.getStatusCode());
-            System.out.println("상세 정보 응답 본문: " + response.getBody());
+            if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
+                ObjectMapper objectMapper;
+                JsonNode root;
 
-            if (response.getStatusCode().is2xxSuccessful()) {
                 if (responseType.equals("json")) {
-                    // JSON 응답 처리
-                    ObjectMapper objectMapper = new ObjectMapper();
-                    JsonNode root = objectMapper.readTree(response.getBody());
-
-                    JsonNode itemNode = root.path("response").path("body").path("items").path("item");
-
-                    System.out.println("detail itemNode isArray: " + itemNode.isArray());
-
-                    if (itemNode.isArray() && itemNode.size() > 0) {
-                        JsonNode detailItem = itemNode.get(0);
-                        return createCampgroundFromDetailItem(detailItem, contentId);
-                    } else if (itemNode.isObject()) {
-                        JsonNode detailItem = itemNode;
-                        return createCampgroundFromDetailItem(detailItem, contentId);
-                    } else {
-                        System.out.println("상세 정보 없음: contentId " + contentId);
-                    }
+                    objectMapper = new ObjectMapper();
+                    root = objectMapper.readTree(httpResponse.body());
                 } else {
-                    // XML 응답 처리
                     XmlMapper xmlMapper = new XmlMapper();
-                    JsonNode root = xmlMapper.readTree(response.getBody());
+                    root = xmlMapper.readTree(httpResponse.body());
+                }
 
-                    JsonNode itemNode = root.path("response").path("body").path("items").path("item");
+                JsonNode itemNode = root.path("response").path("body").path("items").path("item");
 
-                    System.out.println("detail itemNode isArray: " + itemNode.isArray());
+                System.out.println("detail itemNode isArray: " + itemNode.isArray());
 
-                    if (itemNode.isArray() && itemNode.size() > 0) {
-                        JsonNode detailItem = itemNode.get(0);
-                        return createCampgroundFromDetailItem(detailItem, contentId);
-                    } else if (itemNode.isObject()) {
-                        JsonNode detailItem = itemNode;
-                        return createCampgroundFromDetailItem(detailItem, contentId);
-                    } else {
-                        System.out.println("상세 정보 없음: contentId " + contentId);
-                    }
+                if (itemNode.isArray() && itemNode.size() > 0) {
+                    JsonNode detailItem = itemNode.get(0);
+                    return createCampgroundFromDetailItem(detailItem, contentId);
+                } else if (itemNode.isObject()) {
+                    JsonNode detailItem = itemNode;
+                    return createCampgroundFromDetailItem(detailItem, contentId);
+                } else {
+                    System.out.println("상세 정보 없음: contentId " + contentId);
                 }
             } else {
-                System.out.println("상세 정보 API 요청 실패: " + response.getStatusCode());
+                System.out.println("상세 정보 API 요청 실패: " + httpResponse.statusCode());
             }
         } catch (Exception e) {
             System.err.println("contentId " + contentId + "에 대한 상세 정보 가져오기 오류: " + e.getMessage());

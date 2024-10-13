@@ -68,7 +68,7 @@ sns:
     redirect-url: http://localhost:8888/oauth/kakao
 
 api:
-  service-key: 1hn+gLY7OOgfyP87C0jNZaIzN31HriUkwkZh7nfUzSLnsHtZlPP4nJwHbq/D30TINtoXvx0VNwOC255+FQA/KA==
+  service-key: 1hn%2BgLY7OOgfyP87C0jNZaIzN31HriUkwkZh7nfUzSLnsHtZlPP4nJwHbq%2FD30TINtoXvx0VNwOC255%2BFQA%2FKA%3D%3D
   mobile-os: AND  # "IOS", "AND", "WIN", "ETC"
   mobile-app: campers
-  response-type: xml  # "xml" 또는 "json"
+  response-type: json  # "xml" 또는 "json"
