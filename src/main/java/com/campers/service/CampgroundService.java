@@ -1,6 +1,7 @@
 // src/main/java/com/campers/service/CampgroundService.java
 package com.campers.service;
 
+import com.campers.dto.CampgroundDTO; // 추가: DTO 클래스 임포트
 import com.campers.entity.Campground;
 import com.campers.repository.CampgroundRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -14,17 +15,14 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.annotation.PostConstruct;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -73,14 +71,27 @@ public class CampgroundService {
     private List<Campground> fetchCampgroundsFromApi() {
         List<Campground> campgrounds = new ArrayList<>();
 
-        // 캠핑장 이름 목록을 가져오는 메서드
-        List<String> campgroundNames = getCampgroundNames();
-        System.out.println("캠핑장 이름 목록 가져옴: " + campgroundNames.size() + "개");
+        // 캠핑장 DTO 목록을 가져오는 메서드
+        List<CampgroundDTO> campgroundDTOs = getCampgroundDTOs();
+        System.out.println("캠핑장 DTO 목록 가져옴: " + campgroundDTOs.size() + "개");
 
-        for (String name : campgroundNames) {
+        for (CampgroundDTO dto : campgroundDTOs) {
+            String name = dto.getName();
+            Double lat = dto.getLocation().getLat();
+            Double lng = dto.getLocation().getLng();
+
             try {
-                // 키워드를 2글자로 설정
-                String keyword = name.length() >= 2 ? name.substring(0, 2) : name;
+                // 키워드를 3글자로 설정 (API 요구사항에 따라 조정)
+                String keyword = name.length() >= 3 ? name.substring(0, 3) : name;
+                // 공백이 포함된 키워드를 적절히 처리
+                // 키워드를 캠핑장 이름 전체로 설정하되, 최소 3글자 이상
+//                if (name.length() < 3) {
+//                    System.out.println("캠핑장 이름이 3글자 미만이어서 건너뜀: " + name);
+//                    continue; // 이름이 3글자 미만이면 건너뜀
+//                }
+                String trimmedkeyword = keyword.trim();
+
+                System.out.println("트림된 키워드: " + trimmedkeyword);
 
                 // 검색 API 호출 URL
                 String searchUrl = "http://apis.data.go.kr/B551011/KorService1/searchKeyword1";
@@ -94,8 +105,9 @@ public class CampgroundService {
                         .queryParam("pageNo", 1)
                         .queryParam("MobileOS", mobileOs)
                         .queryParam("MobileApp", mobileApp)
-                        .queryParam("keyword", keyword)
+                        .queryParam("keyword", trimmedkeyword)
                         .queryParam("contentTypeId", 12)
+                        .queryParam("cat1", "A01") // 추가: 대분류 코드 A01로 필터링
                         .queryParam("_type", responseType)
                         .build(false) // 추가 인코딩 방지
                         .toUriString();
@@ -114,7 +126,8 @@ public class CampgroundService {
                 HttpResponse<String> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
                 System.out.println("응답 상태 코드: " + httpResponse.statusCode());
-                System.out.println("응답 본문: " + httpResponse.body());
+                // 응답 본문을 출력하면 로그가 너무 길어질 수 있으므로 주석 처리
+                // System.out.println("응답 본문: " + httpResponse.body());
 
                 if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
                     ObjectMapper objectMapper;
@@ -131,13 +144,47 @@ public class CampgroundService {
                     JsonNode itemsNode = root.path("response").path("body").path("items").path("item");
                     System.out.println("itemsNode isArray: " + itemsNode.isArray());
 
-                    if (itemsNode.isArray()) {
-                        for (JsonNode item : itemsNode) {
-                            String contentId = item.path("contentid").asText();
-                            Campground campground = fetchCampgroundDetails(contentId);
+                    // **수정된 부분: 대분류 코드 A01인 경우만 처리**
+                    if (itemsNode.isArray() && itemsNode.size() > 0) {
+                        JsonNode firstItem = itemsNode.get(0);
+                        String contentId = firstItem.path("contentid").asText();
+                        String cat1 = firstItem.path("cat1").asText();
+
+                        // 대분류 코드가 A01인지 확인
+                        if ("A01".equals(cat1)) {
+                            Long contentIdLong;
+                            try {
+                                contentIdLong = Long.parseLong(contentId);
+                            } catch (NumberFormatException e) {
+                                System.err.println("Invalid contentId format: " + contentId);
+                                continue; // 유효하지 않은 contentId면 건너뜀
+                            }
+
+                            // 중복 체크: 이미 존재하는지 확인
+                            if (campgroundRepository.existsById(contentIdLong)) {
+                                System.out.println("이미 존재하는 캠핑장, 건너뜀: contentId=" + contentId);
+                                continue; // 이미 존재하면 건너뜀
+                            }
+
+                            Campground campground = fetchCampgroundDetails(contentId, dto);
                             if (campground != null) {
                                 campgrounds.add(campground);
                             }
+                        } else {
+                            System.out.println("대분류 코드가 A01이 아님: " + cat1);
+                        }
+                    } else if (itemsNode.isObject()) {
+                        String contentId = itemsNode.path("contentid").asText();
+                        String cat1 = itemsNode.path("cat1").asText();
+
+                        // 대분류 코드가 A01인지 확인
+                        if ("A01".equals(cat1)) {
+                            Campground campground = fetchCampgroundDetails(contentId, dto);
+                            if (campground != null) {
+                                campgrounds.add(campground);
+                            }
+                        } else {
+                            System.out.println("대분류 코드가 A01이 아님: " + cat1);
                         }
                     }
                 }
@@ -150,7 +197,7 @@ public class CampgroundService {
     }
 
     // 특정 캠핑장의 상세 정보를 가져오는 메서드 (XML 및 JSON 파싱 지원)
-    private Campground fetchCampgroundDetails(String contentId) {
+    private Campground fetchCampgroundDetails(String contentId, CampgroundDTO dto) { // dto 추가
         try {
             String detailUrl = "http://apis.data.go.kr/B551011/KorService1/detailCommon1";
 
@@ -162,6 +209,8 @@ public class CampgroundService {
                     .queryParam("contentId", contentId)
                     .queryParam("defaultYN", "Y")
                     .queryParam("firstImageYN", "Y")
+                    .queryParam("addrinfoYN", "Y") // 추가
+                    .queryParam("overviewYN", "Y") // 추가
                     .queryParam("_type", responseType)
                     .build(false)
                     .toUriString();
@@ -180,7 +229,8 @@ public class CampgroundService {
             HttpResponse<String> httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             System.out.println("상세 정보 응답 상태 코드: " + httpResponse.statusCode());
-            System.out.println("상세 정보 응답 본문: " + httpResponse.body());
+            // 상세 응답 본문 출력 주석 처리
+            // System.out.println("상세 정보 응답 본문: " + httpResponse.body());
 
             if (httpResponse.statusCode() >= 200 && httpResponse.statusCode() < 300) {
                 ObjectMapper objectMapper;
@@ -200,10 +250,10 @@ public class CampgroundService {
 
                 if (itemNode.isArray() && itemNode.size() > 0) {
                     JsonNode detailItem = itemNode.get(0);
-                    return createCampgroundFromDetailItem(detailItem, contentId);
+                    return createCampgroundFromDetailItem(detailItem, dto, contentId);
                 } else if (itemNode.isObject()) {
                     JsonNode detailItem = itemNode;
-                    return createCampgroundFromDetailItem(detailItem, contentId);
+                    return createCampgroundFromDetailItem(detailItem, dto, contentId);
                 } else {
                     System.out.println("상세 정보 없음: contentId " + contentId);
                 }
@@ -219,7 +269,7 @@ public class CampgroundService {
     }
 
     // 상세 정보 아이템으로부터 Campground 객체 생성
-    private Campground createCampgroundFromDetailItem(JsonNode detailItem, String contentId) {
+    private Campground createCampgroundFromDetailItem(JsonNode detailItem, CampgroundDTO dto, String contentId) {
         // 이미지 URL 가져오기
         String imageUrl = detailItem.path("firstimage").asText();
         System.out.println("상세 정보 이미지 URL: " + imageUrl);
@@ -233,12 +283,20 @@ public class CampgroundService {
                 System.err.println("Invalid contentId format: " + contentId);
                 return null;
             }
-            campground.setLatitude(detailItem.path("mapy").asDouble());
-            campground.setLongitude(detailItem.path("mapx").asDouble());
+            // JSON 파일에서 가져온 위도와 경도 설정
+            campground.setLatitude(dto.getLocation().getLat());
+            campground.setLongitude(dto.getLocation().getLng());
             campground.setImageUrl(imageUrl);
+            campground.setName(dto.getName());
+
+            // 추가: addr1과 overview 설정
+            String addr1 = detailItem.path("addr1").asText();
+            String overview = detailItem.path("overview").asText();
+
+            campground.setAddress(addr1);
+            campground.setDescription(overview);
 
             // 추가로 필요한 필드 설정 (필요 시 추가)
-            // 예: campground.setName(detailItem.path("title").asText());
 
             return campground;
         } else {
@@ -247,8 +305,9 @@ public class CampgroundService {
         }
     }
 
-    // JSON 파일에서 캠핑장 이름 목록을 읽어오는 메서드
-    private List<String> getCampgroundNames() {
+
+    // JSON 파일에서 캠핑장 DTO 목록을 읽어오는 메서드
+    private List<CampgroundDTO> getCampgroundDTOs() {
         try {
             // JSON 파일을 리소스에서 읽어오기
             ClassPathResource resource = new ClassPathResource("data/campgrounds.json");
@@ -256,12 +315,9 @@ public class CampgroundService {
 
             // JSON 파싱 (Jackson ObjectMapper 사용)
             ObjectMapper mapper = new ObjectMapper();
-            List<Map<String, Object>> campgrounds = mapper.readValue(inputStream, new TypeReference<List<Map<String, Object>>>() {});
+            List<CampgroundDTO> campgrounds = mapper.readValue(inputStream, new TypeReference<List<CampgroundDTO>>() {});
 
-            // 캠핑장 이름 목록 추출
-            return campgrounds.stream()
-                    .map(campground -> (String) campground.get("name")) // "name" 필드에서 캠핑장 이름 가져오기
-                    .collect(Collectors.toList()); // 리스트로 변환
+            return campgrounds;
 
         } catch (IOException e) {
             System.err.println("캠핑장 데이터를 불러오는 중 오류 발생: " + e.getMessage());
