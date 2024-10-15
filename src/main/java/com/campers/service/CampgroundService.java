@@ -160,11 +160,12 @@ public class CampgroundService {
                                 continue; // 유효하지 않은 contentId면 건너뜀
                             }
 
-                            // 중복 체크: 이미 존재하는지 확인
-                            if (campgroundRepository.existsById(contentIdLong)) {
-                                System.out.println("이미 존재하는 캠핑장, 건너뜀: contentId=" + contentId);
+                            // **중복 체크: latitude 또는 longitude가 일치하는지 확인**
+                            if (campgroundRepository.existsByLatitudeOrLongitude(lat, lng)) {
+                                System.out.println("이미 존재하는 캠핑장 (lat 또는 lng 일치), 건너뜀: contentId=" + contentId);
                                 continue; // 이미 존재하면 건너뜀
                             }
+
 
                             Campground campground = fetchCampgroundDetails(contentId, dto);
                             if (campground != null) {

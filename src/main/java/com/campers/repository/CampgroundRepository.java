@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CampgroundRepository extends JpaRepository<Campground, Long> {
+    boolean existsByLatitudeOrLongitude(Double lat, Double lng);
 
     // Custom query methods if needed
 }
