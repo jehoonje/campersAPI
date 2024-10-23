@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,14 +47,14 @@ public class CampgroundService {
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
-    // 애플리케이션 시작 시 자동으로 데이터 업데이트 실행
-    @PostConstruct
-    public void init() {
-        updateCampgroundsDataImmediately();
-    }
+//    // 애플리케이션 시작 시 자동으로 데이터 업데이트 실행
+//    @PostConstruct
+//    public void init() {
+//        updateCampgroundsDataImmediately();
+//    }
 
     // 캠핑장 데이터를 업데이트하는 메서드 (스케줄러로 사용할 수 있음)
-    // @Scheduled(cron = "0 0 0 * * ?") // 매일 자정에 실행
+    @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Seoul")
     public void updateCampgroundsData() {
         System.out.println("캠핑장 데이터 업데이트 시작...");
         List<Campground> campgrounds = fetchCampgroundsFromApi();
