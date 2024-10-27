@@ -1,3 +1,4 @@
+### Gradle ###
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
@@ -5,10 +6,7 @@ build/
 !**/src/test/**/build/
 
 ### IntelliJ IDEA ###
-.idea/modules.xml
-.idea/jarRepositories.xml
-.idea/compiler.xml
-.idea/libraries/
+.idea/
 *.iws
 *.iml
 *.ipr
@@ -40,3 +38,17 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Java/Spring Specific ###
+/logs/
+/tmp/
+/*.log
+/*.yml  # Ignore all .yml files, including application.yml
+/*.yaml
+*.db
+*.db-shm
+*.db-wal
+
+### Sensitive configuration files ###
+/src/main/resources/application.yml
+/src/main/resources/application-*.yml
