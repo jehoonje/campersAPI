@@ -13,6 +13,9 @@ public class Campground {
     private Double longitude;
     private String imageUrl;
 
+    @Column(columnDefinition = "TEXT")
+    private String feature = "무료";
+
     @Column(columnDefinition = "TEXT") // 데이터 타입 명시
     private String description; // overview 저장
 
@@ -76,5 +79,13 @@ public class Campground {
 
     public void setAddress(String address) { // 추가
         this.address = address;
+    }
+
+    public String getFeature() {
+        return feature;
+    }
+
+    public void setFeature(String feature) {
+        this.feature = feature;
     }
 }

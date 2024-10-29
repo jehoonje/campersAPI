@@ -8,6 +8,8 @@ public class CampgroundDTO {
     private Location location;
     private String address; // 추가
     private String description; // 추가
+    private String feature = "무료";
+    private String imageUrl;
 
     // Getters and Setters
 
@@ -42,6 +44,23 @@ public class CampgroundDTO {
     public void setDescription(String description) { // 추가
         this.description = description;
     }
+
+    public String getFeature() {
+        return feature;
+    }
+
+    public void setFeature(String feature) {
+        this.feature = feature;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
 
     // 중첩 클래스 정의
     @JsonIgnoreProperties(ignoreUnknown = true)

@@ -272,12 +272,10 @@ public class CampgroundService {
 
     // 상세 정보 아이템으로부터 Campground 객체 생성
     private Campground createCampgroundFromDetailItem(JsonNode detailItem, CampgroundDTO dto, String contentId) {
-        // 이미지 URL 가져오기
-        String imageUrl = detailItem.path("firstimage").asText();
-        System.out.println("상세 정보 이미지 URL: " + imageUrl);
+        String apiImageUrl = detailItem.path("firstimage").asText();
+        String dtoImageUrl = dto.getImageUrl();
 
-        // 이미지가 있는 경우에만 Campground 객체 생성
-        if (imageUrl != null && !imageUrl.isEmpty()) {
+        if ((apiImageUrl != null && !apiImageUrl.isEmpty()) || (dtoImageUrl != null && !dtoImageUrl.isEmpty())) {
             Campground campground = new Campground();
             try {
                 campground.setId(Long.parseLong(contentId));
@@ -285,20 +283,38 @@ public class CampgroundService {
                 System.err.println("Invalid contentId format: " + contentId);
                 return null;
             }
-            // JSON 파일에서 가져온 위도와 경도 설정
+
+            // 위도와 경도 설정
             campground.setLatitude(dto.getLocation().getLat());
             campground.setLongitude(dto.getLocation().getLng());
-            campground.setImageUrl(imageUrl);
+
+            // 이미지 URL 설정
+            if (dtoImageUrl != null && !dtoImageUrl.isEmpty()) {
+                campground.setImageUrl(dtoImageUrl);
+            } else {
+                campground.setImageUrl(apiImageUrl);
+            }
+
             campground.setName(dto.getName());
 
-            // 추가: addr1과 overview 설정
+            // 주소 설정
             String addr1 = detailItem.path("addr1").asText();
-            String overview = detailItem.path("overview").asText();
-
             campground.setAddress(addr1);
-            campground.setDescription(overview);
 
-            // 추가로 필요한 필드 설정 (필요 시 추가)
+            // description 설정
+            if (dto.getDescription() != null && !dto.getDescription().isEmpty()) {
+                campground.setDescription(dto.getDescription());
+            } else {
+                String overview = detailItem.path("overview").asText();
+                campground.setDescription(overview);
+            }
+
+            // feature 설정
+            if (dto.getFeature() != null && !dto.getFeature().isEmpty()) {
+                campground.setFeature(dto.getFeature());
+            } else {
+                campground.setFeature("무료");
+            }
 
             return campground;
         } else {
