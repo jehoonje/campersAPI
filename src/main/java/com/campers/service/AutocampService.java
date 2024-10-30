@@ -4,7 +4,6 @@ import com.campers.entity.Autocamp;
 import com.campers.repository.AutocampRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.*;
 
@@ -24,14 +23,8 @@ public class AutocampService {
     @Value("${api.service-key}")
     private String serviceKey;
 
-    @PostConstruct
-    public void init() {
-        updateAutocampsData();
-    }
-
-
-//    @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Seoul")
-//    public void scheduledUpdateAutocampsData() {
+//    @PostConstruct
+//    public void init() {
 //        updateAutocampsData();
 //    }
 
@@ -63,13 +56,19 @@ public class AutocampService {
 
                     // Fetch overview and additional details
                     String overview = fetchAutocampOverview(autocamp.getContentId());
-                    autocamp.setDescription(overview);
+                    autocamp.setDescription(overview != null ? overview : "문의");
 
                     // Fetch detailIntro
                     fetchAutocampDetailIntro(autocamp);
 
                     // Fetch detailInfo
                     fetchAutocampDetailInfo(autocamp);
+
+                    // Check if both infocenterleports and reservation are "문의"
+                    if ("문의".equals(autocamp.getInfocenterleports()) && "문의".equals(autocamp.getReservation())) {
+                        System.out.println("infocenterleports와 reservation이 모두 문의인 오토캠핑장, 건너뜀: contentId=" + autocamp.getContentId());
+                        continue;
+                    }
 
                     autocampRepository.save(autocamp);
                     System.out.println("오토캠핑장 저장 완료: " + autocamp.getTitle());
@@ -171,7 +170,7 @@ public class AutocampService {
             }
         }
 
-        return null;
+        return "문의";
     }
 
     private void fetchAutocampDetailIntro(Autocamp autocamp) throws Exception {
@@ -215,6 +214,16 @@ public class AutocampService {
                 autocamp.setRestdateleports(getTagValue("restdateleports", eElement));
                 autocamp.setUsetimeleports(getTagValue("usetimeleports", eElement));
             }
+        } else {
+            // 값이 없을 경우 "문의"로 설정
+            autocamp.setChkpetleports("문의");
+            autocamp.setInfocenterleports("문의");
+            autocamp.setOpenperiod("문의");
+            autocamp.setParkingfeeleports("문의");
+            autocamp.setParkingleports("문의");
+            autocamp.setReservation("문의");
+            autocamp.setRestdateleports("문의");
+            autocamp.setUsetimeleports("문의");
         }
     }
 
@@ -278,15 +287,19 @@ public class AutocampService {
         NodeList nlList = eElement.getElementsByTagName(tag);
 
         if (nlList == null || nlList.getLength() == 0) {
-            return null;
+            return "문의";
         }
 
         NodeList childNodes = nlList.item(0).getChildNodes();
         if (childNodes == null || childNodes.getLength() == 0) {
-            return null;
+            return "문의";
         }
 
         Node nValue = childNodes.item(0);
+        if (nValue == null || nValue.getNodeValue() == null || nValue.getNodeValue().isEmpty()) {
+            return "문의";
+        }
+
         return nValue.getNodeValue();
     }
 

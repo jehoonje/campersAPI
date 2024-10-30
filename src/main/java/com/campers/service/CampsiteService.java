@@ -4,10 +4,10 @@ import com.campers.entity.Campsite;
 import com.campers.repository.CampsiteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.*;
 
+import javax.annotation.PostConstruct;
 import javax.xml.parsers.*;
 import java.io.*;
 import java.net.*;
@@ -23,10 +23,11 @@ public class CampsiteService {
     @Value("${api.service-key}")
     private String serviceKey;
 
-    @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Seoul")
-    public void scheduledUpdateCampsitesData() {
-        updateCampsitesData();
-    }
+//
+//    @PostConstruct
+//    public void init() {
+//        updateCampsitesData();
+//    }
 
     // 실행 함수
     public void updateCampsitesData() {
@@ -34,7 +35,7 @@ public class CampsiteService {
             String keyword = "야영장";
             String apiUrl = "http://apis.data.go.kr/B551011/KorService1/searchKeyword1"
                     + "?serviceKey=" + serviceKey
-                    + "&numOfRows=1000"
+                    + "&numOfRows=276"
                     + "&pageNo=1"
                     + "&MobileOS=ETC"
                     + "&MobileApp=AppTest"
@@ -48,7 +49,8 @@ public class CampsiteService {
 
             // Save to database
             for (Campsite campsite : campsites) {
-                if (campsite.getImage1() != null || campsite.getImage2() != null) {
+                // 이미지가 모두 존재하는지 확인
+                if (isValidImage(campsite.getImage1()) && isValidImage(campsite.getImage2())) {
                     // Check for duplicates
                     if (campsiteRepository.existsByLatAndLng(campsite.getLat(), campsite.getLng())) {
                         System.out.println("이미 존재하는 야영장, 건너뜀: contentId=" + campsite.getContentId());
@@ -57,13 +59,19 @@ public class CampsiteService {
 
                     // Fetch overview and additional details
                     String overview = fetchCampsiteOverview(campsite.getContentId());
-                    campsite.setDescription(overview);
+                    campsite.setDescription(overview != null ? overview : "문의");
 
                     // Fetch detailIntro
                     fetchCampsiteDetailIntro(campsite);
 
                     // Fetch detailInfo
                     fetchCampsiteDetailInfo(campsite);
+
+                    // Check if both infocenterleports and reservation are "문의"
+                    if ("문의".equals(campsite.getInfocenterleports()) && "문의".equals(campsite.getReservation())) {
+                        System.out.println("infocenterleports와 reservation이 모두 문의인 야영장, 건너뜀: contentId=" + campsite.getContentId());
+                        continue;
+                    }
 
                     campsiteRepository.save(campsite);
                     System.out.println("야영장 저장 완료: " + campsite.getTitle());
@@ -77,6 +85,11 @@ public class CampsiteService {
             System.err.println("야영장 데이터를 업데이트하는 중 오류 발생: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    // 이미지 URL이 유효한지 확인하는 메서드
+    private boolean isValidImage(String imageUrl) {
+        return imageUrl != null && !imageUrl.trim().isEmpty();
     }
 
     // 콘텐츠 아이디, 이미지와 기본정보 가져오기
@@ -167,7 +180,7 @@ public class CampsiteService {
             }
         }
 
-        return null;
+        return "문의";
     }
 
     // 시설 기본정보 가져오기
@@ -212,6 +225,16 @@ public class CampsiteService {
                 campsite.setRestdateleports(getTagValue("restdateleports", eElement));
                 campsite.setUsetimeleports(getTagValue("usetimeleports", eElement));
             }
+        } else {
+            // 값이 없을 경우 "문의"로 설정
+            campsite.setChkpetleports("문의");
+            campsite.setInfocenterleports("문의");
+            campsite.setOpenperiod("문의");
+            campsite.setParkingfeeleports("문의");
+            campsite.setParkingleports("문의");
+            campsite.setReservation("문의");
+            campsite.setRestdateleports("문의");
+            campsite.setUsetimeleports("문의");
         }
     }
 
@@ -272,20 +295,23 @@ public class CampsiteService {
         }
     }
 
-
     private String getTagValue(String tag, Element eElement) {
         NodeList nlList = eElement.getElementsByTagName(tag);
 
         if (nlList == null || nlList.getLength() == 0) {
-            return null;
+            return "문의";
         }
 
         NodeList childNodes = nlList.item(0).getChildNodes();
         if (childNodes == null || childNodes.getLength() == 0) {
-            return null;
+            return "문의";
         }
 
         Node nValue = childNodes.item(0);
+        if (nValue == null || nValue.getNodeValue() == null || nValue.getNodeValue().trim().isEmpty()) {
+            return "문의";
+        }
+
         return nValue.getNodeValue();
     }
 
