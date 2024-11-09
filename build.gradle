@@ -1,3 +1,5 @@
+// build.gradle
+
 buildscript {
     ext {
         queryDslVersion = "5.0.0"
@@ -16,12 +18,12 @@ jar {
 
     manifest {
         attributes(
-                'Main-Class': 'com.yp.MainApplication' // 실제 메인 클래스 경로로 수정
+                'Main-Class': 'com.campers.MainApplication' // 실제 메인 클래스 경로로 수정
         )
     }
 }
 
-group = 'com.yp'
+group = 'com.campers'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '11'
 
@@ -29,6 +31,12 @@ configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
+    // 기존에 로깅 제외 설정이 있다면 제거합니다.
+    /*
+    all {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+    }
+    */
 }
 
 repositories {
@@ -50,7 +58,7 @@ dependencies {
     // Spring Boot Starter for testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
-    // Query Parameters Logging (P6Spy)
+    // P6Spy for Query Parameters Logging
     implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.5.8'
 
     // Email Sending Library
@@ -59,19 +67,11 @@ dependencies {
     // Jackson XML 데이터 포맷 (버전 생략, Spring Boot 의존성 관리 사용)
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 
-    // 주석 처리된 스프링 시큐리티와 JWT 의존성 (필요하면 주석 해제)
-    /*
+    // 스프링 시큐리티와 JWT 의존성 (회원가입 및 인증을 위해 필요)
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'io.jsonwebtoken:jjwt-api:0.11.2'
     implementation 'io.jsonwebtoken:jjwt-impl:0.11.2'
     implementation 'io.jsonwebtoken:jjwt-jackson:0.11.2'
-    */
-
-    // QueryDSL 관련 의존성 (필요할 때 주석 해제)
-    /*
-    implementation "com.querydsl:querydsl-jpa:${queryDslVersion}"
-    annotationProcessor "com.querydsl:querydsl-apt:${queryDslVersion}"
-    */
 }
 
 // Jackson 의존성 버전 강제 설정 (선택 사항)
@@ -83,7 +83,6 @@ configurations.all {
         }
     }
 }
-
 
 // Deprecated된 JavaPluginConvention 대신 JavaPluginExtension 사용
 java {
@@ -113,5 +112,3 @@ compileQuerydsl {
     options.annotationProcessorPath = configurations.querydsl
 }
 */
-
-
