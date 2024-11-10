@@ -1,4 +1,5 @@
 // src/main/java/com/campers/util/JwtTokenUtil.java
+
 package com.campers.util;
 
 import io.jsonwebtoken.*;
@@ -72,3 +73,4 @@ public class JwtTokenUtil {
         return false;
     }
 }
+
