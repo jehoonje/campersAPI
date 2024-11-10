@@ -23,7 +23,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         "/api/login",
                         "/api/signup",
                         "/api/request-verification-code",
-                        "/api/verify-code"
+                        "/api/verify-code",
+                        "/api/campgrounds",   // 추가된 엔드포인트
+                        "/api/beaches",       // 추가된 엔드포인트
+                        "/api/campsites",     // 추가된 엔드포인트
+                        "/api/autocamps",     // 추가된 엔드포인트
+                        "/api/fishings",
+                        "/api/check-email"// 추가된 엔드포인트
                 ).permitAll()
                 .anyRequest().authenticated();
     }
