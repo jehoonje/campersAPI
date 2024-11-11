@@ -6,6 +6,7 @@ import com.campers.dto.SignupRequest;
 import com.campers.entity.User;
 import com.campers.repository.UserRepository;
 import com.campers.util.JwtTokenUtil;
+import com.campers.store.RefreshTokenStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,6 +33,9 @@ public class AuthController {
 
     @Autowired
     private JwtTokenUtil jwtTokenUtil;
+
+    @Autowired
+    private RefreshTokenStore refreshTokenStore;
 
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody Map<String, String> payload) {
@@ -86,18 +90,59 @@ public class AuthController {
             if (!existingUser.isEmailVerified()) {
                 Map<String, String> response = new HashMap<>();
                 response.put("message", "이메일 인증이 필요합니다.");
-                return ResponseEntity.status(401).body(response);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
             }
 
-            String token = jwtTokenUtil.generateToken(existingUser.getEmail());
+            // Access Token과 Refresh Token 생성
+            String accessToken = jwtTokenUtil.generateAccessToken(existingUser.getEmail());
+            String refreshToken = jwtTokenUtil.generateRefreshToken(existingUser.getEmail());
+
+            System.out.println("Access Token 생성 완료: " + accessToken);
+            System.out.println("Refresh Token 생성 완료: " + refreshToken);
+
+            // Refresh Token 저장
+            refreshTokenStore.storeRefreshToken(existingUser.getEmail(), refreshToken);
+
             Map<String, String> response = new HashMap<>();
-            response.put("token", token);
+            response.put("accessToken", accessToken);
+            response.put("refreshToken", refreshToken);
+            System.out.println("로그인 성공 - 토큰 반환");
             return ResponseEntity.ok(response);
         } else {
             Map<String, String> response = new HashMap<>();
             response.put("message", "이메일 또는 비밀번호가 올바르지 않습니다.");
-            return ResponseEntity.status(401).body(response);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(@RequestBody Map<String, String> payload) {
+        String refreshToken = payload.get("refreshToken");
+
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Refresh Token을 제공해주세요.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        if (jwtTokenUtil.validateToken(refreshToken)) {
+            String email = jwtTokenUtil.getEmailFromToken(refreshToken);
+            String storedRefreshToken = refreshTokenStore.getRefreshToken(email);
+            if (refreshToken.equals(storedRefreshToken)) {
+                String newAccessToken = jwtTokenUtil.refreshAccessToken(refreshToken);
+                if (newAccessToken != null) {
+                    // 새로운 Access Token 발급
+                    Map<String, String> response = new HashMap<>();
+                    response.put("accessToken", newAccessToken);
+                    response.put("refreshToken", refreshToken); // 기존 Refresh Token 유지
+                    return ResponseEntity.ok(response);
+                }
+            }
+        }
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "유효하지 않은 Refresh Token입니다.");
+        return ResponseEntity.status(401).body(response);
     }
 
     @PostMapping("/request-verification-code")
@@ -205,7 +250,7 @@ public class AuthController {
             User existingUser = userRepository.findByEmail(email);
             Map<String, Boolean> response = new HashMap<>();
             response.put("isDuplicate", existingUser != null);
-            System.out.println("Responding with isDuplicate: " + existingUser != null);
+            System.out.println("Responding with isDuplicate: " + (existingUser != null));
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             e.printStackTrace();
@@ -215,8 +260,6 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
-
-
 
     // 인증번호 재전송 엔드포인트 추가
     @PostMapping("/resend-verification-code")

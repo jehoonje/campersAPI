@@ -13,19 +13,36 @@ public class JwtTokenUtil {
     @Value("${jwt.secret}")
     private String SECRET_KEY;
 
-    @Value("${jwt.expiration}")
-    private long expirationTime;
+    @Value("${jwt.access.expiration}")
+    private long accessTokenExpiration; // 예: 3600000 (1시간)
+
+    @Value("${jwt.refresh.expiration}")
+    private long refreshTokenExpiration; // 예: 604800000 (7일)
 
     /**
-     * JWT 토큰 생성
+     * Access Token 생성
      *
      * @param email 사용자 이메일
-     * @return 생성된 JWT 토큰
+     * @return 생성된 Access Token
      */
-    public String generateToken(String email) {
+    public String generateAccessToken(String email) {
         return Jwts.builder()
                 .setSubject(email)
-                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
+                .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
+                .signWith(SignatureAlgorithm.HS512, SECRET_KEY)
+                .compact();
+    }
+
+    /**
+     * Refresh Token 생성
+     *
+     * @param email 사용자 이메일
+     * @return 생성된 Refresh Token
+     */
+    public String generateRefreshToken(String email) {
+        return Jwts.builder()
+                .setSubject(email)
+                .setExpiration(new Date(System.currentTimeMillis() + refreshTokenExpiration))
                 .signWith(SignatureAlgorithm.HS512, SECRET_KEY)
                 .compact();
     }
@@ -55,22 +72,39 @@ public class JwtTokenUtil {
             Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token);
             return true;
         } catch (SignatureException e) {
-            // 잘못된 JWT 서명
             System.err.println("Invalid JWT signature: " + e.getMessage());
         } catch (MalformedJwtException e) {
-            // 잘못된 JWT 토큰
             System.err.println("Invalid JWT token: " + e.getMessage());
         } catch (ExpiredJwtException e) {
-            // 만료된 JWT 토큰
             System.err.println("Expired JWT token: " + e.getMessage());
         } catch (UnsupportedJwtException e) {
-            // 지원되지 않는 JWT 토큰
             System.err.println("Unsupported JWT token: " + e.getMessage());
         } catch (IllegalArgumentException e) {
-            // JWT 클레임이 비어있음
             System.err.println("JWT claims string is empty: " + e.getMessage());
         }
         return false;
     }
-}
 
+    /**
+     * Refresh Token을 사용하여 새로운 Access Token 발급
+     *
+     * @param refreshToken Refresh Token
+     * @return 새로운 Access Token
+     */
+    public String refreshAccessToken(String refreshToken) {
+        try {
+            Claims claims = Jwts.parser()
+                    .setSigningKey(SECRET_KEY)
+                    .parseClaimsJws(refreshToken)
+                    .getBody();
+            String email = claims.getSubject();
+            return generateAccessToken(email);
+        } catch (ExpiredJwtException e) {
+            System.err.println("Expired Refresh Token: " + e.getMessage());
+            return null;
+        } catch (JwtException e) {
+            System.err.println("Invalid Refresh Token: " + e.getMessage());
+            return null;
+        }
+    }
+}
