@@ -2,7 +2,10 @@
 
 package com.campers.filter;
 
+import com.campers.store.RefreshTokenStore;
 import com.campers.util.JwtTokenUtil;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -12,13 +15,10 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import io.jsonwebtoken.JwtException;
-
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 
 @Component
@@ -27,30 +27,47 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private JwtTokenUtil jwtTokenUtil;
 
-    // @Autowired
-    // private CustomUserDetailsService customUserDetailsService;
+    @Autowired
+    private RefreshTokenStore refreshTokenStore;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
+        final String refreshHeader = request.getHeader("Refresh-Token"); // Refresh Token 헤더
 
         String email = null;
         String token = null;
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
-
             try {
                 email = jwtTokenUtil.getEmailFromToken(token);
+            } catch (ExpiredJwtException e) {
+                logger.warn("Access Token expired: " + e.getMessage());
+                // Access Token 만료 시 Refresh Token을 사용하여 새로운 Access Token 발급 시도
+                if (refreshHeader != null && !refreshHeader.isEmpty()) {
+                    String refreshToken = refreshHeader;
+                    if (jwtTokenUtil.validateToken(refreshToken)) {
+                        String refreshEmail = jwtTokenUtil.getEmailFromToken(refreshToken);
+                        String storedRefreshToken = refreshTokenStore.getRefreshToken(refreshEmail);
+                        if (refreshToken.equals(storedRefreshToken)) {
+                            String newAccessToken = jwtTokenUtil.refreshAccessToken(refreshToken);
+                            if (newAccessToken != null) {
+                                // 새로운 Access Token을 응답 헤더에 추가
+                                response.setHeader("Authorization", "Bearer " + newAccessToken);
+                                email = jwtTokenUtil.getEmailFromToken(newAccessToken);
+                            }
+                        }
+                    }
+                }
             } catch (JwtException e) {
-                logger.error("JWT token parsing error: " + e.getMessage());
+                logger.error("JWT parsing error: " + e.getMessage());
             }
         }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
             // JWT 토큰이 유효한 경우 인증 설정
             if (jwtTokenUtil.validateToken(token)) {
                 UsernamePasswordAuthenticationToken authentication =
@@ -65,4 +82,3 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 }
-
