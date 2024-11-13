@@ -2,7 +2,10 @@
 
 package com.campers.util;
 
+import com.campers.entity.User;
+import com.campers.repository.UserRepository;
 import io.jsonwebtoken.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import java.util.Date;
@@ -19,15 +22,20 @@ public class JwtTokenUtil {
     @Value("${jwt.refresh.expiration}")
     private long refreshTokenExpiration; // 예: 604800000 (7일)
 
+    @Autowired
+    private UserRepository userRepository;
+
     /**
      * Access Token 생성
      *
-     * @param email 사용자 이메일
+     * @param email  사용자 이메일
+     * @param userId 사용자 ID
      * @return 생성된 Access Token
      */
-    public String generateAccessToken(String email) {
+    public String generateAccessToken(String email, Long userId) {
         return Jwts.builder()
                 .setSubject(email)
+                .claim("userId", userId)
                 .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
                 .signWith(SignatureAlgorithm.HS512, SECRET_KEY)
                 .compact();
@@ -98,7 +106,16 @@ public class JwtTokenUtil {
                     .parseClaimsJws(refreshToken)
                     .getBody();
             String email = claims.getSubject();
-            return generateAccessToken(email);
+
+            // email로 userId 조회
+            User user = userRepository.findByEmail(email);
+            if (user == null) {
+                System.err.println("User not found with email: " + email);
+                return null;
+            }
+            Long userId = user.getId();
+
+            return generateAccessToken(email, userId);
         } catch (ExpiredJwtException e) {
             System.err.println("Expired Refresh Token: " + e.getMessage());
             return null;

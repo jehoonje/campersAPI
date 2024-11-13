@@ -3,6 +3,7 @@
 package com.campers.repository;
 
 import com.campers.entity.Review;
+import com.campers.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
@@ -10,5 +11,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     // 특정 컨텐츠에 대한 모든 리뷰 가져오기
     List<Review> findByContentTypeAndContentId(String contentType, Long contentId);
+
+    boolean existsByUserAndContentTypeAndContentId(User user, String contentType, Long contentId);
 }
 
