@@ -11,18 +11,15 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
+    private String userName;
+
     @Column(unique = true, nullable = false)
     private String email;
 
     private boolean emailVerified = false;
 
-    private String verificationCode;
-
     private String password;
-
-    @Column
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date verificationCodeExpiry;
 
     // Getter와 Setter 추가
 
@@ -53,23 +50,7 @@ public class User {
     public void setEmailVerified(boolean emailVerified) {
         this.emailVerified = emailVerified;
     }
-    // 인증 코드
-    public String getVerificationCode() {
-        return verificationCode;
-    }
 
-    public void setVerificationCode(String verificationCode) {
-        this.verificationCode = verificationCode;
-    }
-
-    // 인증 코드 만료시간
-    public Date getVerificationCodeExpiry() {
-        return verificationCodeExpiry;
-    }
-
-    public void setVerificationCodeExpiry(Date verificationCodeExpiry) {
-        this.verificationCodeExpiry = verificationCodeExpiry;
-    }
 
     // 비밀번호
     public String getPassword() {
@@ -78,5 +59,13 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 }

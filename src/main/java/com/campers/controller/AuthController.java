@@ -1,10 +1,9 @@
-// src/main/java/com/campers/controller/AuthController.java
-
 package com.campers.controller;
 
-import com.campers.dto.SignupRequest;
 import com.campers.entity.User;
+import com.campers.entity.VerificationToken;
 import com.campers.repository.UserRepository;
+import com.campers.repository.VerificationTokenRepository;
 import com.campers.util.JwtTokenUtil;
 import com.campers.store.RefreshTokenStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,8 +21,12 @@ import java.util.*;
 @RestController
 @RequestMapping("/api")
 public class AuthController {
+
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private VerificationTokenRepository verificationTokenRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -37,6 +40,36 @@ public class AuthController {
     @Autowired
     private RefreshTokenStore refreshTokenStore;
 
+    // 랜덤한 6자리 숫자로 고유한 userName 생성
+    private String generateUniqueUserName() {
+        Random random = new Random();
+        String userName;
+        int maxAttempts = 5;
+        int attempts = 0;
+
+        do {
+            int randomNumber = 100000 + random.nextInt(900000); // 100000 ~ 999999 사이의 숫자
+            userName = "user" + randomNumber;
+            attempts++;
+            // 중복되지 않을 때까지 시도
+        } while (userRepository.existsByUserName(userName) && attempts < maxAttempts);
+
+        if (userRepository.existsByUserName(userName)) {
+            throw new RuntimeException("고유한 사용자 이름을 생성할 수 없습니다.");
+        }
+
+        return userName;
+    }
+
+    // 비밀번호 유효성 검사 메서드
+    private boolean isValidPassword(String password) {
+        if (password.length() < 8) return false;
+        if (!password.matches(".*[!@#$%^&*(),.?\":{}|<>].*")) return false;
+        if (!password.matches(".*[a-zA-Z].*")) return false;
+        if (!password.matches(".*[0-9].*")) return false;
+        return true;
+    }
+
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
@@ -48,21 +81,40 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        User existingUser = userRepository.findByEmail(email);
-        if (existingUser == null || !existingUser.isEmailVerified()) {
+        // 이메일 인증 여부 확인
+        VerificationToken token = verificationTokenRepository.findByEmail(email);
+        if (token == null || !token.isVerified()) {
             Map<String, String> response = new HashMap<>();
             response.put("message", "이메일 인증이 완료되지 않았습니다.");
             return ResponseEntity.badRequest().body(response);
         }
 
-        existingUser.setPassword(passwordEncoder.encode(password));
-        existingUser.setVerificationCode(null); // 인증번호 삭제
-        userRepository.save(existingUser);
+        // 이미 가입된 이메일인지 확인
+        if (userRepository.findByEmail(email) != null) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "이미 가입된 이메일입니다.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        // 랜덤한 6자리 숫자로 고유한 userName 생성
+        String userName = generateUniqueUserName();
+
+        User newUser = new User();
+        newUser.setEmail(email);
+        newUser.setPassword(passwordEncoder.encode(password));
+        newUser.setUserName(userName);
+        newUser.setEmailVerified(true);
+
+        userRepository.save(newUser);
+
+        // VerificationToken 삭제
+        verificationTokenRepository.delete(token);
 
         Map<String, Boolean> response = new HashMap<>();
         response.put("success", true);
         return ResponseEntity.ok(response);
     }
+
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> payload) {
@@ -94,7 +146,7 @@ public class AuthController {
             }
 
             // Access Token과 Refresh Token 생성
-            String accessToken = jwtTokenUtil.generateAccessToken(existingUser.getEmail());
+            String accessToken = jwtTokenUtil.generateAccessToken(existingUser.getEmail(), existingUser.getId());
             String refreshToken = jwtTokenUtil.generateRefreshToken(existingUser.getEmail());
 
             System.out.println("Access Token 생성 완료: " + accessToken);
@@ -145,6 +197,22 @@ public class AuthController {
         return ResponseEntity.status(401).body(response);
     }
 
+    @PostMapping("/check-email")
+    public ResponseEntity<?> checkEmail(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
+
+        if (email == null || email.isEmpty()) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "이메일을 입력해주세요.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        boolean isDuplicate = userRepository.findByEmail(email) != null || verificationTokenRepository.findByEmail(email) != null;
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("isDuplicate", isDuplicate);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/request-verification-code")
     public ResponseEntity<?> requestVerificationCode(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
@@ -164,21 +232,21 @@ public class AuthController {
         // 인증번호 생성
         String verificationCode = generateVerificationCode();
 
-        User newUser = new User();
-        newUser.setEmail(email);
-        newUser.setVerificationCode(verificationCode);
-        newUser.setEmailVerified(false);
+        // VerificationToken 엔티티 생성 및 저장
+        VerificationToken token = new VerificationToken();
+        token.setEmail(email);
+        token.setVerificationCode(verificationCode);
 
-        // 만료 시간 설정 (현재 시간에서 5분 후)
+        // 만료 시간 설정
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.MINUTE, 5);
-        newUser.setVerificationCodeExpiry(calendar.getTime());
+        token.setExpiryDate(calendar.getTime());
 
         // 이메일 발송
         sendVerificationEmail(email, verificationCode);
 
         // 데이터베이스에 저장
-        userRepository.save(newUser);
+        verificationTokenRepository.save(token);
 
         Map<String, Boolean> response = new HashMap<>();
         response.put("success", true);
@@ -196,26 +264,26 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        User existingUser = userRepository.findByEmail(email);
-        if (existingUser == null) {
+        VerificationToken token = verificationTokenRepository.findByEmail(email);
+        if (token == null) {
             Map<String, String> response = new HashMap<>();
-            response.put("message", "이메일을 찾을 수 없습니다.");
+            response.put("message", "인증 요청을 찾을 수 없습니다.");
             return ResponseEntity.badRequest().body(response);
         }
 
         // 인증번호 만료 시간 확인
         Date now = new Date();
-        if (existingUser.getVerificationCodeExpiry() == null || now.after(existingUser.getVerificationCodeExpiry())) {
+        if (token.getExpiryDate() == null || now.after(token.getExpiryDate())) {
             Map<String, String> response = new HashMap<>();
             response.put("message", "인증번호가 만료되었습니다. 다시 요청해주세요.");
             return ResponseEntity.badRequest().body(response);
         }
 
-        if (existingUser.getVerificationCode().equals(code)) {
-            existingUser.setEmailVerified(true);
-            existingUser.setVerificationCode(null);
-            existingUser.setVerificationCodeExpiry(null);
-            userRepository.save(existingUser);
+        if (token.getVerificationCode().equals(code)) {
+            // 이메일 인증 상태 업데이트
+            token.setVerified(true);
+            verificationTokenRepository.save(token);
+
             Map<String, Boolean> response = new HashMap<>();
             response.put("success", true);
             return ResponseEntity.ok(response);
@@ -226,42 +294,7 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/check-email")
-    public ResponseEntity<?> checkEmail(@RequestBody Map<String, String> payload) {
-        String email = payload.get("email");
-        System.out.println("Received /check-email request with email: " + email);
 
-        if (email == null || email.isEmpty()) {
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "이메일을 입력해주세요.");
-            System.out.println("Responding with error: 이메일을 입력해주세요.");
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        String emailRegex = "^[A-Za-z0-9+_.-]+@(.+)$";
-        if (!email.matches(emailRegex)) {
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "유효한 이메일 형식이 아닙니다.");
-            System.out.println("Responding with error: 유효한 이메일 형식이 아닙니다.");
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        try {
-            User existingUser = userRepository.findByEmail(email);
-            Map<String, Boolean> response = new HashMap<>();
-            response.put("isDuplicate", existingUser != null);
-            System.out.println("Responding with isDuplicate: " + (existingUser != null));
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            e.printStackTrace();
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "서버 오류가 발생했습니다.");
-            System.out.println("Responding with error: 서버 오류가 발생했습니다.");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-        }
-    }
-
-    // 인증번호 재전송 엔드포인트 추가
     @PostMapping("/resend-verification-code")
     public ResponseEntity<?> resendVerificationCode(@RequestBody Map<String, String> payload) {
         String email = payload.get("email");
@@ -272,32 +305,31 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        User existingUser = userRepository.findByEmail(email);
-        if (existingUser == null) {
+        if (userRepository.findByEmail(email) != null) {
             Map<String, String> response = new HashMap<>();
-            response.put("message", "이메일을 찾을 수 없습니다.");
-            return ResponseEntity.badRequest().body(response);
-        }
-
-        if (existingUser.isEmailVerified()) {
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "이미 인증된 이메일입니다.");
+            response.put("message", "이미 사용 중인 이메일입니다.");
             return ResponseEntity.badRequest().body(response);
         }
 
         // 새로운 인증번호 생성
         String verificationCode = generateVerificationCode();
-        existingUser.setVerificationCode(verificationCode);
+
+        VerificationToken token = verificationTokenRepository.findByEmail(email);
+        if (token == null) {
+            token = new VerificationToken();
+            token.setEmail(email);
+        }
+        token.setVerificationCode(verificationCode);
 
         // 만료 시간 재설정
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.MINUTE, 5);
-        existingUser.setVerificationCodeExpiry(calendar.getTime());
+        token.setExpiryDate(calendar.getTime());
 
         // 이메일 재발송
         sendVerificationEmail(email, verificationCode);
 
-        userRepository.save(existingUser);
+        verificationTokenRepository.save(token);
 
         Map<String, Boolean> response = new HashMap<>();
         response.put("success", true);

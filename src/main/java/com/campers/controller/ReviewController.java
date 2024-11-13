@@ -44,6 +44,12 @@ public class ReviewController {
             return ResponseEntity.status(401).body("Unauthorized");
         }
 
+        // 중복 리뷰 확인
+        boolean reviewExists = reviewService.existsByUserAndContentTypeAndContentId(user, reviewRequest.getContentType(), reviewRequest.getContentId());
+        if (reviewExists) {
+            return ResponseEntity.status(400).body("You have already written a review for this content.");
+        }
+
         // 리뷰 생성
         Review review = new Review();
         review.setUser(user);

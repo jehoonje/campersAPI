@@ -3,6 +3,7 @@
 package com.campers.service;
 
 import com.campers.entity.Review;
+import com.campers.entity.User;
 import com.campers.repository.ReviewRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -38,5 +39,10 @@ public class ReviewService {
     public Review getReviewById(Long reviewId) {
         return reviewRepository.findById(reviewId).orElse(null);
     }
+
+    public boolean existsByUserAndContentTypeAndContentId(User user, String contentType, Long contentId) {
+        return reviewRepository.existsByUserAndContentTypeAndContentId(user, contentType, contentId);
+    }
+
 }
 
