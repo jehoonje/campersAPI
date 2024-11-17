@@ -52,6 +52,9 @@ public class SecurityConfig {
                         "/api/autocamps",
                         "/api/fishings",
                         "/api/check-email",
+                        "/api/favorites",
+                        "/api/favorites/**",
+                        "/api/favorites/**/**",
                         "/api/reviews/average/**",
                         "/api/reviews/**/**" // 리뷰 목록 조회는 공개
                 ).permitAll()
