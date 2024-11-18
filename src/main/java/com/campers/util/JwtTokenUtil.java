@@ -2,13 +2,19 @@
 
 package com.campers.util;
 
+import com.campers.entity.Role;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import com.campers.entity.User;
+import io.jsonwebtoken.Claims;
 import com.campers.repository.UserRepository;
 import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtTokenUtil {
@@ -33,9 +39,20 @@ public class JwtTokenUtil {
      * @return 생성된 Access Token
      */
     public String generateAccessToken(String email, Long userId) {
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new IllegalArgumentException("User not found with email: " + email);
+        }
+
+        List<String> roles = user.getRoles().stream()
+                .map(Role::getName) // Role 엔티티의 이름을 가져오는 메서드
+                .collect(Collectors.toList());
+
         return Jwts.builder()
                 .setSubject(email)
                 .claim("userId", userId)
+                .claim("roles", roles) // 역할 정보 추가
+                .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
                 .signWith(SignatureAlgorithm.HS512, SECRET_KEY)
                 .compact();
@@ -50,6 +67,7 @@ public class JwtTokenUtil {
     public String generateRefreshToken(String email) {
         return Jwts.builder()
                 .setSubject(email)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + refreshTokenExpiration))
                 .signWith(SignatureAlgorithm.HS512, SECRET_KEY)
                 .compact();
@@ -123,5 +141,16 @@ public class JwtTokenUtil {
             System.err.println("Invalid Refresh Token: " + e.getMessage());
             return null;
         }
+    }
+
+    public Claims getAllClaimsFromToken(String token) {
+        return Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(token).getBody();
+    }
+
+
+    public List<GrantedAuthority> getAuthoritiesFromToken(String token) {
+        Claims claims = getAllClaimsFromToken(token);
+        List<String> roles = claims.get("roles", List.class);
+        return roles.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
     }
 }
