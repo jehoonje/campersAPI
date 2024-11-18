@@ -8,6 +8,7 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 // import org.springframework.security.core.userdetails.UserDetails;
 // import com.campers.service.CustomUserDetailsService;
@@ -20,6 +21,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -58,6 +60,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                 // 새로운 Access Token을 응답 헤더에 추가
                                 response.setHeader("Authorization", "Bearer " + newAccessToken);
                                 email = jwtTokenUtil.getEmailFromToken(newAccessToken);
+                                token = newAccessToken; // 새로운 토큰을 사용하도록 설정
                             }
                         }
                     }
@@ -70,8 +73,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             // JWT 토큰이 유효한 경우 인증 설정
             if (jwtTokenUtil.validateToken(token)) {
+                List<GrantedAuthority> authorities = jwtTokenUtil.getAuthoritiesFromToken(token);
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(email, null, null);
+                        new UsernamePasswordAuthenticationToken(email, null, authorities);
 
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
