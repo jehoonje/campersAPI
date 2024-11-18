@@ -40,6 +40,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf().disable()
+                .cors().and()
                 .authorizeRequests()
                 .antMatchers(
                         "/api/login",
@@ -52,13 +53,11 @@ public class SecurityConfig {
                         "/api/autocamps",
                         "/api/fishings",
                         "/api/check-email",
-                        "/api/favorites",
-                        "/api/favorites/**",
-                        "/api/favorites/**/**",
                         "/api/reviews/average/**",
                         "/api/reviews/**/**" // 리뷰 목록 조회는 공개
                 ).permitAll()
                 .antMatchers("/api/reviews/**").authenticated() // 리뷰 작성, 수정, 삭제는 인증 필요
+                .antMatchers("/api/favorites/**").authenticated() // 즐겨찾기 관련 API는 인증 필요
                 .anyRequest().authenticated();
 
         // JWT 필터 추가

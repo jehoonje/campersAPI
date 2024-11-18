@@ -1,7 +1,9 @@
 package com.campers.controller;
 
+import com.campers.entity.Role;
 import com.campers.entity.User;
 import com.campers.entity.VerificationToken;
+import com.campers.repository.RoleRepository;
 import com.campers.repository.UserRepository;
 import com.campers.repository.VerificationTokenRepository;
 import com.campers.util.JwtTokenUtil;
@@ -24,6 +26,9 @@ public class AuthController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     @Autowired
     private VerificationTokenRepository verificationTokenRepository;
@@ -104,6 +109,11 @@ public class AuthController {
         newUser.setPassword(passwordEncoder.encode(password));
         newUser.setUserName(userName);
         newUser.setEmailVerified(true);
+
+        Role userRole = roleRepository.findByName("ROLE_USER")
+                .orElseThrow(() -> new RuntimeException("ROLE_USER not found"));
+
+        newUser.setRoles(Collections.singleton(userRole));
 
         userRepository.save(newUser);
 
