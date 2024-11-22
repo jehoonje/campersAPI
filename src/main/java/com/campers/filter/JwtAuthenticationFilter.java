@@ -61,6 +61,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                 response.setHeader("Authorization", "Bearer " + newAccessToken);
                                 email = jwtTokenUtil.getEmailFromToken(newAccessToken);
                                 token = newAccessToken; // 새로운 토큰을 사용하도록 설정
+
+                                // 새로운 토큰으로 인증 객체 생성 및 설정
+                                List<GrantedAuthority> authorities = jwtTokenUtil.getAuthoritiesFromToken(newAccessToken);
+                                UsernamePasswordAuthenticationToken authentication =
+                                        new UsernamePasswordAuthenticationToken(email, null, authorities);
+                                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                                SecurityContextHolder.getContext().setAuthentication(authentication);
                             }
                         }
                     }
