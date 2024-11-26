@@ -1,4 +1,4 @@
-// src/main/java/com/campers/config/WebConfig.java
+// WebConfig.java
 package com.campers.config;
 
 import org.springframework.context.annotation.Configuration;
@@ -14,5 +14,12 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(false);
+    }
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // 업로드 파일 경로를 static으로 처리
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:src/main/resources/uploads/"); // 파일 업로드 경로 설정
     }
 }
