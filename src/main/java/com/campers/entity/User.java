@@ -33,11 +33,19 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
-    // Getter와 Setter 추가
+    @Column(name = "profile_image")
+    private String profileImage;
+
+
+// Getter와 Setter 추가
 
 
 
     // Getter, Setter
+
+    public String getProfileImage() {return profileImage;}
+
+    public void setProfileImage(String profileImage) { this.profileImage = profileImage;}
 
     public Set<Role> getRoles() {
         return roles;

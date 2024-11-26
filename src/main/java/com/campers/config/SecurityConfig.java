@@ -54,7 +54,9 @@ public class SecurityConfig {
                         "/api/fishings",
                         "/api/check-email",
                         "/api/reviews/average/**",
-                        "/api/reviews/**/**" // 리뷰 목록 조회는 공개
+                        "/api/reviews/**/**",
+                        "/api/users/**/**",
+                        "/uploads/**"
                 ).permitAll()
                 .antMatchers("/api/reviews/**").authenticated() // 리뷰 작성, 수정, 삭제는 인증 필요
                 .antMatchers("/api/favorites/**").authenticated() // 즐겨찾기 관련 API는 인증 필요
