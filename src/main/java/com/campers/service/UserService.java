@@ -28,41 +28,42 @@ public class UserService {
 
     private final Path rootLocation = Paths.get("upload-dir");
 
-    public String saveProfileImage(Long userId, MultipartFile file) throws IOException {
-        Optional<User> userOpt = userRepository.findById(userId);
-        if (!userOpt.isPresent()) {
-            throw new RuntimeException("User not found");
-        }
+    // 프로필 이미지 저장 메서드
+    public String saveProfileImage(Long userId, MultipartFile imageFile) throws IOException {
+        // 이미지 저장 로직 구현
+        // 이미지 저장 후 이미지 URL 또는 경로 반환
+        String fileName = "profile_" + userId + "_" + imageFile.getOriginalFilename();
+        Path uploadPath = Paths.get("uploads/" + fileName);
 
-        String filename = "user_" + userId + "_" + file.getOriginalFilename();
-        Files.copy(file.getInputStream(), this.rootLocation.resolve(filename),
-                StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(imageFile.getInputStream(), uploadPath, StandardCopyOption.REPLACE_EXISTING);
 
-        User user = userOpt.get();
-        user.setProfileImage(filename);
-        userRepository.save(user);
+        // 이미지 URL 생성 (서버 주소에 맞게 수정)
+        String imageUrl = "http://10.0.2.2:8080/uploads/" + fileName;
 
-        return filename;
+        return imageUrl;
     }
 
     public void updateUserProfile(Long userId, String userName, MultipartFile imageFile) throws IOException {
         Optional<User> userOpt = userRepository.findById(userId);
-        if (!userOpt.isPresent()) {
-            throw new RuntimeException("User not found");
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+
+            // 유저 이름 업데이트
+            user.setUserName(userName);
+
+            // 프로필 이미지가 있는 경우 처리
+            if (imageFile != null && !imageFile.isEmpty()) {
+                // 이미지 저장 로직 구현
+                String imagePath = saveProfileImage(userId, imageFile);
+                user.setProfileImage(imagePath);
+            }
+
+            userRepository.save(user);
+        } else {
+            throw new RuntimeException("유저를 찾을 수 없습니다.");
         }
-
-        User user = userOpt.get();
-        user.setUserName(userName);
-
-        if (imageFile != null && !imageFile.isEmpty()) {
-            String filename = "user_" + userId + "_" + imageFile.getOriginalFilename();
-            Files.copy(imageFile.getInputStream(), this.rootLocation.resolve(filename),
-                    StandardCopyOption.REPLACE_EXISTING);
-            user.setProfileImage(filename);
-        }
-
-        userRepository.save(user);
     }
+
 
     public Optional<User> findById(Long userId) {
         return userRepository.findById(userId);

@@ -109,7 +109,7 @@ public class AuthController {
         newUser.setPassword(passwordEncoder.encode(password));
         newUser.setUserName(userName);
         newUser.setEmailVerified(true);
-        newUser.setProfileImage("default_profile.png");
+        newUser.setProfileImage("");
 
         Role userRole = roleRepository.findByName("ROLE_USER")
                 .orElseThrow(() -> new RuntimeException("ROLE_USER not found"));
