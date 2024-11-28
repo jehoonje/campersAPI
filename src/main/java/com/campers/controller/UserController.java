@@ -75,11 +75,12 @@ public class UserController {
     @PutMapping("/{userId}/update")
     public ResponseEntity<String> updateUserName(
             @PathVariable Long userId,
-            @RequestBody User updatedUser
+            @RequestPart("userName") String userName,
+            @RequestPart(value = "image", required = false) MultipartFile imageFile
     ) {
         try {
             // userId에 해당하는 유저가 존재하는지 확인하고, userName을 업데이트
-            userService.updateUserName(userId, updatedUser.getUserName());
+            userService.updateUserProfile(userId, userName, imageFile);
             return ResponseEntity.ok("유저 이름이 성공적으로 업데이트되었습니다.");
         } catch (Exception e) {
             return ResponseEntity.status(500).body("유저 이름 업데이트 중 오류가 발생했습니다.");
