@@ -157,7 +157,7 @@ public class AuthController {
             }
 
             // Access Token과 Refresh Token 생성
-            String accessToken = jwtTokenUtil.generateAccessToken(existingUser.getEmail(), existingUser.getId());
+            String accessToken = jwtTokenUtil.generateAccessToken(existingUser.getEmail(), existingUser.getId(), existingUser.getUserName());
             String refreshToken = jwtTokenUtil.generateRefreshToken(existingUser.getEmail());
 
             System.out.println("Access Token 생성 완료: " + accessToken);
@@ -351,14 +351,14 @@ public class AuthController {
         String subject = "인증번호를 확인해주세요";
         String message = "<html><body>"
                 + "<div style='max-width:600px;margin:auto;font-family:sans-serif;'>"
-                + "<h1 style='color:#1e90ff;'>Campers 이메일 인증</h1>"
+                + "<h1 style='color:#1e90ff;'>캠브릿지 이메일 인증</h1>"
                 + "<p>안녕하세요,</p>"
                 + "<p>아래의 인증번호를 앱에서 입력하여 이메일 인증을 완료해주세요:</p>"
                 + "<div style='padding:20px;background-color:#f2f2f2;border-radius:8px;'>"
                 + "<h2 style='text-align:center;'>" + code + "</h2>"
                 + "</div>"
                 + "<p style='color:#888;'>인증번호는 5분 후에 만료됩니다.</p>"
-                + "<p>감사합니다.<br/>Campers 팀 드림</p>"
+                + "<p>감사합니다.<br/>캠브릿지 팀 드림</p>"
                 + "</div>"
                 + "</body></html>";
 
