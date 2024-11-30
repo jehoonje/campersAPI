@@ -38,7 +38,7 @@ public class JwtTokenUtil {
      * @param userId 사용자 ID
      * @return 생성된 Access Token
      */
-    public String generateAccessToken(String email, Long userId) {
+    public String generateAccessToken(String email, Long userId, String userName) {
         User user = userRepository.findByEmail(email);
         if (user == null) {
             throw new IllegalArgumentException("User not found with email: " + email);
@@ -51,6 +51,7 @@ public class JwtTokenUtil {
         return Jwts.builder()
                 .setSubject(email)
                 .claim("userId", userId)
+                .claim("userName", userName)
                 .claim("roles", roles) // 역할 정보 추가
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + accessTokenExpiration))
@@ -132,8 +133,9 @@ public class JwtTokenUtil {
                 return null;
             }
             Long userId = user.getId();
+            String userName = user.getUserName();
 
-            return generateAccessToken(email, userId);
+            return generateAccessToken(email, userId, userName);
         } catch (ExpiredJwtException e) {
             System.err.println("Expired Refresh Token: " + e.getMessage());
             return null;
