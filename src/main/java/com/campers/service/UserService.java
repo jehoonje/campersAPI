@@ -30,11 +30,17 @@ public class UserService {
 
     // 프로필 이미지 저장 메서드
     public String saveProfileImage(Long userId, MultipartFile imageFile) throws IOException {
-        // 이미지 저장 로직 구현
-        // 이미지 저장 후 이미지 URL 또는 경로 반환
-        String fileName = "profile_" + userId + "_" + imageFile.getOriginalFilename();
-        Path uploadPath = Paths.get("uploads/" + fileName);
+        // 업로드 디렉토리 확인 및 생성
+        Path uploadDir = Paths.get("uploads");
+        if (!Files.exists(uploadDir)) {
+            Files.createDirectories(uploadDir);
+        }
 
+        // 이미지 파일 이름 생성
+        String fileName = "profile_" + userId + "_" + imageFile.getOriginalFilename();
+        Path uploadPath = uploadDir.resolve(fileName);
+
+        // 파일 저장
         Files.copy(imageFile.getInputStream(), uploadPath, StandardCopyOption.REPLACE_EXISTING);
 
         // 이미지 URL 생성 (서버 주소에 맞게 수정)

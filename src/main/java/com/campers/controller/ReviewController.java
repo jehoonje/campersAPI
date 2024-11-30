@@ -85,7 +85,7 @@ public class ReviewController {
             ReviewDTO dto = new ReviewDTO();
             dto.setId(review.getId());
             dto.setUserId(review.getUser().getId());
-            dto.setUserName(review.getUser().getEmail()); // 또는 review.getUser().getName()
+            dto.setUserName(review.getUser().getUserName()); // 또는 review.getUser().getName()
             dto.setContentType(review.getContentType());
             dto.setContentId(review.getContentId());
             dto.setContent(review.getContent());
