@@ -29,7 +29,7 @@ public class UserController {
         try {
             String imagePath = userService.saveProfileImage(userId, imageFile);
             Map<String, String> response = new HashMap<>();
-            response.put("profileImage", imagePath);
+            response.put("profileImageUrl", imagePath);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, String> response = new HashMap<>();
@@ -64,7 +64,7 @@ public class UserController {
             Map<String, Object> response = new HashMap<>();
             response.put("userName", user.getUserName());
             response.put("email", user.getEmail());
-            response.put("profileImage", user.getProfileImage());
+            response.put("profileImageUrl", user.getProfileImageUrl());
             return ResponseEntity.ok(response);
         } else {
             return ResponseEntity.notFound().build();
