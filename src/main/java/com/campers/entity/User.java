@@ -1,13 +1,19 @@
 // src/main/java/com/campers/entity/User.java
 package com.campers.entity;
 
+import lombok.*;
+
 import javax.persistence.*;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Table(name = "users")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -16,14 +22,17 @@ public class User {
     @Column(nullable = false, unique = true)
     private String userName;
 
-    @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = true)
     private String email;
 
     private boolean emailVerified = false;
 
     private String password;
 
+    @Column(unique = true)
+    private String kakaoId;
 
+    private String nickname;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -33,68 +42,15 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
-    @Column(name = "profile_image")
-    private String profileImage;
+    @Column(name = "profile_image_url") // 필드 이름 변경
+    private String profileImageUrl; // 필드 이름 변경
 
+    // 필요 시 다른 필드 추가
 
-// Getter와 Setter 추가
-
-
-
-    // Getter, Setter
-
-    public String getProfileImage() {return profileImage;}
-
-    public void setProfileImage(String profileImage) { this.profileImage = profileImage;}
-
-    public Set<Role> getRoles() {
-        return roles;
-    }
-
-    public void setRoles(Set<Role> roles) {
-        this.roles = roles;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    // 이메일
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-    // 이메일 인증 여부
-    public boolean isEmailVerified() {
-        return emailVerified;
-    }
-
-    public void setEmailVerified(boolean emailVerified) {
-        this.emailVerified = emailVerified;
-    }
-
-
-    // 비밀번호
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getUserName() {
-        return userName;
-    }
-
-    public void setUserName(String userName) {
-        this.userName = userName;
+    // Update 메서드 수정
+    public User update(String name, String profileImageUrl) {
+        this.userName = name;
+        this.profileImageUrl = profileImageUrl;
+        return this;
     }
 }

@@ -6,6 +6,7 @@ import com.campers.entity.VerificationToken;
 import com.campers.repository.RoleRepository;
 import com.campers.repository.UserRepository;
 import com.campers.repository.VerificationTokenRepository;
+import com.campers.service.KakaoOAuthService;
 import com.campers.util.JwtTokenUtil;
 import com.campers.store.RefreshTokenStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,12 @@ import java.util.*;
 @RestController
 @RequestMapping("/api")
 public class AuthController {
+
+    private final KakaoOAuthService kakaoOAuthService;
+
+    public AuthController(KakaoOAuthService kakaoOAuthService) {
+        this.kakaoOAuthService = kakaoOAuthService;
+    }
 
     @Autowired
     private UserRepository userRepository;
@@ -104,17 +111,15 @@ public class AuthController {
         // 랜덤한 6자리 숫자로 고유한 userName 생성
         String userName = generateUniqueUserName();
 
-        User newUser = new User();
-        newUser.setEmail(email);
-        newUser.setPassword(passwordEncoder.encode(password));
-        newUser.setUserName(userName);
-        newUser.setEmailVerified(true);
-        newUser.setProfileImage("");
-
-        Role userRole = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new RuntimeException("ROLE_USER not found"));
-
-        newUser.setRoles(Collections.singleton(userRole));
+        User newUser = User.builder()
+                .email(email)
+                .password(passwordEncoder.encode(password))
+                .userName(userName)
+                .emailVerified(true)
+                .profileImageUrl("") // 필드 이름 수정
+                .roles(Collections.singleton(roleRepository.findByName("ROLE_USER")
+                        .orElseThrow(() -> new RuntimeException("ROLE_USER not found"))))
+                .build();
 
         userRepository.save(newUser);
 
@@ -379,5 +384,22 @@ public class AuthController {
         Random random = new Random();
         int code = 100000 + random.nextInt(900000); // 6자리 인증번호 생성
         return String.valueOf(code);
+    }
+
+    @PostMapping("/auth/kakao")
+    public ResponseEntity<?> kakaoLogin(@RequestBody Map<String, String> data) {
+        String accessToken = data.get("accessToken");
+        try {
+            Map<String, String> tokens = kakaoOAuthService.kakaoLogin(accessToken);
+            return ResponseEntity.ok(tokens);
+        } catch (Exception e) {
+            // 예외 로그 출력
+            e.printStackTrace();
+
+            // 클라이언트로 상세한 에러 메시지 반환
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "카카오 로그인 실패: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
     }
 }
