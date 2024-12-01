@@ -59,9 +59,16 @@ public class UserService {
 
             // 프로필 이미지가 있는 경우 처리
             if (imageFile != null && !imageFile.isEmpty()) {
+                // 기존 이미지 파일 삭제 (선택 사항)
+                if (user.getProfileImageUrl() != null && !user.getProfileImageUrl().isEmpty()) {
+                    String existingFileName = user.getProfileImageUrl().replace("http://localhost:8080/uploads/", "");
+                    Path existingFilePath = Paths.get("uploads").resolve(existingFileName);
+                    Files.deleteIfExists(existingFilePath);
+                }
+
                 // 이미지 저장 로직 구현
                 String imagePath = saveProfileImage(userId, imageFile);
-                user.setProfileImage(imagePath);
+                user.setProfileImageUrl(imagePath);
             }
 
             userRepository.save(user);

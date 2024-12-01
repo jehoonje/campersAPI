@@ -6,6 +6,6 @@ import com.campers.entity.User;
 
 public interface UserRepository extends JpaRepository<User, Long> {
     User findByEmail(String email);
-
+    User findByKakaoId(String kakaoId);
     boolean existsByUserName(String userName);
 }

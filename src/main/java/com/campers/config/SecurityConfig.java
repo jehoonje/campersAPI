@@ -56,7 +56,8 @@ public class SecurityConfig {
                         "/api/reviews/average/**",
                         "/api/reviews/**/**",
                         "/api/users/**/**",
-                        "/uploads/**"
+                        "/uploads/**",
+                        "/api/auth/**"
                 ).permitAll()
                 .antMatchers("/api/reviews/**").authenticated() // 리뷰 작성, 수정, 삭제는 인증 필요
                 .antMatchers("/api/favorites/**").authenticated() // 즐겨찾기 관련 API는 인증 필요
