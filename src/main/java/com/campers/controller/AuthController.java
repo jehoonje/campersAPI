@@ -6,6 +6,7 @@ import com.campers.entity.VerificationToken;
 import com.campers.repository.RoleRepository;
 import com.campers.repository.UserRepository;
 import com.campers.repository.VerificationTokenRepository;
+import com.campers.service.GoogleOAuthService;
 import com.campers.service.KakaoOAuthService;
 import com.campers.util.JwtTokenUtil;
 import com.campers.store.RefreshTokenStore;
@@ -26,9 +27,11 @@ import java.util.*;
 public class AuthController {
 
     private final KakaoOAuthService kakaoOAuthService;
+    private final GoogleOAuthService googleOAuthService;
 
-    public AuthController(KakaoOAuthService kakaoOAuthService) {
+    public AuthController(KakaoOAuthService kakaoOAuthService, GoogleOAuthService googleOAuthService) {
         this.kakaoOAuthService = kakaoOAuthService;
+        this.googleOAuthService = googleOAuthService;
     }
 
     @Autowired
@@ -400,6 +403,34 @@ public class AuthController {
             Map<String, String> response = new HashMap<>();
             response.put("message", "카카오 로그인 실패: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+    }
+
+    @PostMapping("/auth/google")
+    public ResponseEntity<?> googleLogin(@RequestBody Map<String, String> data) {
+        String idToken = data.get("idToken");
+        if (idToken == null || idToken.isEmpty()) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "idToken을 제공해주세요.");
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        try {
+            Optional<User> optionalUser = googleOAuthService.verifyGoogleToken(idToken);
+            if (optionalUser.isPresent()) {
+                User user = optionalUser.get();
+                Map<String, String> tokens = googleOAuthService.generateTokens(user);
+                return ResponseEntity.ok(tokens);
+            } else {
+                Map<String, String> response = new HashMap<>();
+                response.put("message", "Google 토큰 검증 실패 또는 이메일이 확인되지 않았습니다.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Google 로그인 처리 중 오류가 발생했습니다.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 }

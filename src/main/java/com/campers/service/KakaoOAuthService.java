@@ -3,6 +3,7 @@ package com.campers.service;
 
 import com.campers.dto.KakaoUserResponse;
 import com.campers.entity.User;
+import com.campers.repository.RoleRepository;
 import com.campers.repository.UserRepository;
 import com.campers.util.JwtTokenUtil;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,6 +21,7 @@ import java.util.Map;
 public class KakaoOAuthService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final JwtTokenUtil jwtTokenUtil;
 
     public Map<String, String> kakaoLogin(String kakaoAccessToken) throws JSONException {
@@ -79,6 +82,8 @@ public class KakaoOAuthService {
                         .userName(nickName)
                         .profileImageUrl(profileImageURL != null ? profileImageURL : "")
                         .emailVerified(true)
+                        .roles(Collections.singleton(roleRepository.findByName("ROLE_USER")
+                                .orElseThrow(() -> new RuntimeException("ROLE_USER not found"))))
                         .build();
                 userRepository.save(user);
             } else {

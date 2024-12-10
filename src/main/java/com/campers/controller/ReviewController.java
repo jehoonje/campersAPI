@@ -64,7 +64,7 @@ public class ReviewController {
         ReviewDTO dto = new ReviewDTO();
         dto.setId(createdReview.getId());
         dto.setUserId(user.getId());
-        dto.setUserName(user.getEmail()); // 또는 user.getName()
+        dto.setUserName(user.getUserName()); // 또는 user.getName()
         dto.setContentType(createdReview.getContentType());
         dto.setContentId(createdReview.getContentId());
         dto.setContent(createdReview.getContent());
@@ -158,21 +158,20 @@ public class ReviewController {
             return ResponseEntity.status(401).body("Unauthorized");
         }
 
-        // 기존 리뷰 조회
         Review existingReview = reviewService.getReviewById(reviewId);
 
         if (existingReview == null) {
             return ResponseEntity.status(404).body("Review not found");
         }
 
-        // 작성자 일치 여부 확인
-        if (!existingReview.getUser().getId().equals(user.getId())) {
+        // 권한 체크: 작성자이거나 ROLE_ADMIN 보유자만 삭제 가능
+        boolean isAdmin = user.getRoles().stream().anyMatch(role -> "ROLE_ADMIN".equals(role.getName()));
+
+        if (!existingReview.getUser().getId().equals(user.getId()) && !isAdmin) {
             return ResponseEntity.status(403).body("You can only delete your own reviews");
         }
 
-        // 리뷰 삭제
         reviewService.deleteReview(reviewId);
-
         return ResponseEntity.noContent().build();
     }
 
