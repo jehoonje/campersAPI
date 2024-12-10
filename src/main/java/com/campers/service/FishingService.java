@@ -318,7 +318,7 @@ public class FishingService {
 
         NodeList nList = doc.getElementsByTagName("item");
 
-        int imageCount = 3; // image3부터 저장
+        int imageCount = 2; // image2부터 저장
 
         for (int temp = 0; temp < nList.getLength(); temp++) {
             if (imageCount > 5) break; // image5까지만 저장
@@ -332,6 +332,9 @@ public class FishingService {
 
                 if (originimgurl != null && !originimgurl.trim().isEmpty()) {
                     switch (imageCount) {
+                        case 2:
+                            fishing.setImage2(originimgurl);
+                            break;
                         case 3:
                             fishing.setImage3(originimgurl);
                             break;
