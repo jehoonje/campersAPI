@@ -1,6 +1,7 @@
 package com.campers.service;
 
 import com.campers.entity.Autocamp;
+import com.campers.entity.Campsite;
 import com.campers.repository.AutocampRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -63,6 +64,8 @@ public class AutocampService {
 
                     // Fetch detailInfo
                     fetchAutocampDetailInfo(autocamp);
+
+                    fetchAutocampDetailImages(autocamp);
 
                     // Check if both infocenterleports and reservation are "문의"
                     if ("문의".equals(autocamp.getInfocenterleports()) && "문의".equals(autocamp.getReservation())) {
@@ -281,6 +284,88 @@ public class AutocampService {
                 }
             }
         }
+    }
+
+    private void fetchAutocampDetailImages(Autocamp autocamp) throws Exception {
+        String apiUrl = "http://apis.data.go.kr/B551011/KorService1/detailImage1"
+                + "?serviceKey=" + serviceKey
+                + "&contentId=" + autocamp.getContentId()
+                + "&MobileOS=ETC"
+                + "&MobileApp=AppTest"
+                + "&imageYN=Y"
+                + "&subImageYN=Y"
+                + "&numOfRows=10";
+
+        URL url = new URL(apiUrl);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+
+        conn.setRequestMethod("GET");
+        conn.setRequestProperty("Content-Type", "application/xml");
+        conn.setDoOutput(true);
+
+        InputStream is = conn.getInputStream();
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document doc = dBuilder.parse(is);
+
+        doc.getDocumentElement().normalize();
+
+        NodeList nList = doc.getElementsByTagName("item");
+
+        int imageCount = 2; // Start from image2
+
+        for (int temp = 0; temp < nList.getLength(); temp++) {
+            if (imageCount > 5) break; // Limit to image5
+
+            Node nNode = nList.item(temp);
+
+            if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+                Element eElement = (Element) nNode;
+
+                String originimgurl = getTagValueOrDefault("originimgurl", eElement);
+
+                if (originimgurl != null && !originimgurl.trim().isEmpty()) {
+                    switch (imageCount) {
+                        case 2:
+                            autocamp.setImage2(originimgurl);
+                            break;
+                        case 3:
+                            autocamp.setImage3(originimgurl);
+                            break;
+                        case 4:
+                            autocamp.setImage4(originimgurl);
+                            break;
+                        case 5:
+                            autocamp.setImage5(originimgurl);
+                            break;
+                        default:
+                            break;
+                    }
+                    imageCount++;
+                }
+            }
+        }
+    }
+
+    // Helper method to get tag value or return default
+    private String getTagValueOrDefault(String tag, Element eElement) {
+        NodeList nlList = eElement.getElementsByTagName(tag);
+
+        if (nlList == null || nlList.getLength() == 0) {
+            return "문의";
+        }
+
+        NodeList childNodes = nlList.item(0).getChildNodes();
+        if (childNodes == null || childNodes.getLength() == 0) {
+            return "문의";
+        }
+
+        Node nValue = childNodes.item(0);
+        if (nValue == null || nValue.getNodeValue() == null || nValue.getNodeValue().trim().isEmpty()) {
+            return "문의";
+        }
+
+        return nValue.getNodeValue();
     }
 
     private String getTagValue(String tag, Element eElement) {

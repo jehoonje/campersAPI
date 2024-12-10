@@ -1,0 +1,113 @@
+# src/main/resources/2.yml
+
+server:
+  port: 8080
+  address: 0.0.0.0
+
+# database setting
+spring:
+  servlet:
+    multipart:
+      max-file-size: 3MB  # 1개의 파일의 최대 용량
+      max-request-size: 20MB  # 1번의 요청의 보낼 수 있는 최대 용량
+
+  mail:
+    host: smtp.naver.com
+    port: 465
+    username: limjhoon8@naver.com # 실제 이메일 아이디로 변경 필요
+    password: 9CPS36CBNDNP  # 실제 비밀번호로 변경 필요
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          trust: smtp.naver.com
+          starttls:
+            enable: true
+    default-encoding: UTF-8
+    debug: true
+
+  datasource:
+    url: jdbc:mariadb://localhost:3306/campers
+    username: root
+    password: mariadb
+    driver-class-name: org.mariadb.jdbc.Driver
+    hikari:
+      housekeeper:
+        interval: 300000 # 5분 (밀리초 단위)
+  jpa:
+    # DBMS dialect setting
+    database-platform: org.hibernate.dialect.MariaDB106Dialect
+    hibernate:
+      # ddl-auto 설정
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true # SQL 출력 시 예쁘게 출력
+    database: mysql
+
+security:
+  oauth2:
+    client:
+      registration:
+        kakao:
+          client-id: ff37d72757333ccf5d5b4698bd708ef3  # 카카오 REST API 키 (실제 값으로 대체)
+          client-secret: ''  # 카카오는 client-secret을 사용하지 않습니다.
+          redirect-uri: "{baseUrl}/api/auth/kakao"  # 실제 Redirect URI로 대체
+          authorization-grant-type: authorization_code
+          scope: profile_nickname,account_email
+          client-name: Kakao
+        google:
+          client-id: 958440013761-f29q36hrr58t7s07pjdbs9b9e89dm3tm.apps.googleusercontent.com  # Google 클라이언트 ID
+          client-secret: ''  # 필요한 경우 설정
+          redirect-uri: "{baseUrl}/api/auth/google"
+          authorization-grant-type: authorization_code
+          scope: openid,email,profile
+          client-name: Google
+      provider:
+        kakao:
+          authorization-uri: https://kauth.kakao.com/oauth/authorize
+          token-uri: https://kauth.kakao.com/oauth/token
+          user-info-uri: https://kapi.kakao.com/v2/user/me
+          user-name-attribute: id
+        google:
+          authorization-uri: https://accounts.google.com/o/oauth2/auth
+          token-uri: https://oauth2.googleapis.com/token
+          user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+          user-name-attribute: sub
+
+
+google:
+  client:
+    id: 958440013761-f29q36hrr58t7s07pjdbs9b9e89dm3tm.apps.googleusercontent.com
+
+# log level setting
+logging:
+  level:
+    root: info
+    com.campers.api: debug
+    org.hibernate.SQL: debug
+    org.springframework.security: debug
+
+
+jwt:
+  secret: Qr2A9B85IYH9iksiQQ/HleBbCx8EaiJyUo357EQCXkUrvZQ29TMRPpawoP1Nk4mFERpduV0xOInEC8iBOF8A+g==
+  access:
+    expiration: 60480000000        # Access Token 만료 시간 (밀리초 단위, 예: 3600000ms = 1시간)
+  refresh:
+    expiration: 60480000000      # Refresh Token 만료 시간 (밀리초 단위, 예: 604800000ms = 7일)
+
+sns:
+  kakao:
+    app-key: your_kakao_rest_api_key  # 카카오 REST API 키 (실제 값으로 대체)
+    redirect-url: "{baseUrl}/api/auth/kakao"  # 실제 Redirect URI로 대체
+
+storage:
+  location: upload-dir
+
+api:
+  service-key: 1hn%2BgLY7OOgfyP87C0jNZaIzN31HriUkwkZh7nfUzSLnsHtZlPP4nJwHbq%2FD30TINtoXvx0VNwOC255%2BFQA%2FKA%3D%3D
+  mobile-os: AND  # "IOS", "AND", "WIN", "ETC"
+  mobile-app: campers
+  response-type: json  # "xml" 또는 "json"

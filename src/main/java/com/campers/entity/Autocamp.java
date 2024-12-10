@@ -15,6 +15,9 @@ public class Autocamp {
 
     private String image1; // 이미지 URL1 (firstimage)
     private String image2; // 이미지 URL2 (firstimage2)
+    private String image3; // 이미지 URL1 (firstimage)
+    private String image4;
+    private String image5;
 
     private Double lat; // 위도 (mapy)
     private Double lng; // 경도 (mapx)
@@ -62,6 +65,32 @@ public class Autocamp {
 
     // Getters and Setters
     // (Include getters and setters for all fields)
+
+
+    public String getImage3() {
+        return image3;
+    }
+
+    public void setImage3(String image3) {
+        this.image3 = image3;
+    }
+
+    public String getImage4() {
+        return image4;
+    }
+
+    public void setImage4(String image4) {
+        this.image4 = image4;
+    }
+
+    public String getImage5() {
+        return image5;
+    }
+
+    public void setImage5(String image5) {
+        this.image5 = image5;
+    }
+
     public Long getContentId() {
         return contentId;
     }

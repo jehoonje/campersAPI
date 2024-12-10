@@ -25,6 +25,10 @@ public class Campsite {
 
     private String chkpetleports; // 애완동물동반가능정보
 
+    private String image3; // New field
+    private String image4; // New field
+    private String image5; // New field
+
     @Lob
     @Column(columnDefinition = "TEXT")
     private String infocenterleports; // 문의및안내
@@ -62,6 +66,32 @@ public class Campsite {
 
     // Getters and Setters
     // (Include getters and setters for all fields)
+
+
+    public String getImage3() {
+        return image3;
+    }
+
+    public void setImage3(String image3) {
+        this.image3 = image3;
+    }
+
+    public String getImage4() {
+        return image4;
+    }
+
+    public void setImage4(String image4) {
+        this.image4 = image4;
+    }
+
+    public String getImage5() {
+        return image5;
+    }
+
+    public void setImage5(String image5) {
+        this.image5 = image5;
+    }
+
     public Long getContentId() {
         return contentId;
     }
