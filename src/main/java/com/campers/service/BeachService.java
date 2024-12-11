@@ -24,10 +24,10 @@ public class BeachService {
     @Value("${api.service-key}")
     private String serviceKey;
 
-    @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Seoul")
-    public void scheduledUpdateBeachesData() {
-        updateBeachesData();
-    }
+//    @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Seoul")
+//    public void scheduledUpdateBeachesData() {
+//        updateBeachesData();
+//    }
 
 //    @PostConstruct
 //    public void init() {
