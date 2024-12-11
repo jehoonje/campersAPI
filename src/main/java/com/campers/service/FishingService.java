@@ -25,7 +25,7 @@ public class FishingService {
     @Value("${api.service-key}")
     private String serviceKey;
 
-    // 초기화 시 데이터 업데이트 (필요 시 주석 해제)
+////     초기화 시 데이터 업데이트 (필요 시 주석 해제)
 //     @PostConstruct
 //     public void init() {
 //         updateFishingData();

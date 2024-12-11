@@ -44,7 +44,7 @@ public class UserService {
         Files.copy(imageFile.getInputStream(), uploadPath, StandardCopyOption.REPLACE_EXISTING);
 
         // 이미지 URL 생성 (서버 주소에 맞게 수정)
-        String imageUrl = "http://10.0.2.2:8080/uploads/" + fileName;
+        String imageUrl = "http://13.124.234.143:8080/uploads/" + fileName;
 
         return imageUrl;
     }
