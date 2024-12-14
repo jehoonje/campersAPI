@@ -178,4 +178,8 @@ public class BeachService {
     public List<Beach> getAllBeaches() {
         return beachRepository.findAll();
     }
+
+    public Beach getBeachByContentId(Long contentId) {
+        return beachRepository.findByContentId(contentId).orElse(null);
+    }
 }

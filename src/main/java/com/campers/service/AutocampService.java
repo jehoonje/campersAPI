@@ -392,4 +392,8 @@ public class AutocampService {
     public List<Autocamp> getAllAutocamps() {
         return autocampRepository.findAll();
     }
+
+    public Autocamp getAutocampByContentId(Long contentId) {
+        return autocampRepository.findByContentId(contentId).orElse(null);
+    }
 }
