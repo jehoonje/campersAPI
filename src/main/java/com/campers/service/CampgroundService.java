@@ -348,4 +348,8 @@ public class CampgroundService {
     public List<Campground> getAllCampgrounds() {
         return campgroundRepository.findAll();
     }
+
+    public Campground getCampgroundById(Long id) {
+        return campgroundRepository.findById(id).orElse(null);
+    }
 }

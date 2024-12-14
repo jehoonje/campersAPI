@@ -417,4 +417,8 @@ public class FishingService {
     public List<Fishing> getAllFishings() {
         return fishingRepository.findAll();
     }
+
+    public Fishing getFishingByContentId(Long contentId) {
+        return fishingRepository.findByContentId(contentId).orElse(null);
+    }
 }
