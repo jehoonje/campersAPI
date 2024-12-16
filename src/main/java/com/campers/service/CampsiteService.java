@@ -403,4 +403,8 @@ public class CampsiteService {
     public List<Campsite> getAllCampsites() {
         return campsiteRepository.findAll();
     }
+
+    public Campsite getCampsiteByContentId(Long contentId) {
+        return campsiteRepository.findByContentId(contentId).orElse(null);
+    }
 }

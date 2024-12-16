@@ -13,6 +13,8 @@ plugins {
 }
 
 jar {
+    exclude 'application.yml'
+
     // plain jar 생성을 비활성화하여 Spring Boot 실행 jar만 생성되도록 설정
     enabled = false
 
@@ -77,6 +79,9 @@ dependencies {
     implementation 'com.google.api-client:google-api-client:1.33.2'
     implementation 'com.google.oauth-client:google-oauth-client-jetty:1.33.1'
     implementation 'com.google.http-client:google-http-client-jackson2:1.40.1'
+
+    // org.json 라이브러리 추가
+    implementation 'org.json:json:20230618'
 }
 
 // Jackson 의존성 버전 강제 설정 (선택 사항)

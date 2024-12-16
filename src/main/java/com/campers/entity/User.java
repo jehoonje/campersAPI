@@ -25,6 +25,7 @@ public class User {
     @Column(unique = true, nullable = true)
     private String email;
 
+    @Builder.Default
     private boolean emailVerified = false;
 
     private String password;
@@ -40,6 +41,8 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
+
+    @Builder.Default
     private Set<Role> roles = new HashSet<>();
 
     @Column(name = "profile_image_url") // 필드 이름 변경

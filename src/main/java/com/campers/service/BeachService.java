@@ -24,10 +24,10 @@ public class BeachService {
     @Value("${api.service-key}")
     private String serviceKey;
 
-    @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Seoul")
-    public void scheduledUpdateBeachesData() {
-        updateBeachesData();
-    }
+//    @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Seoul")
+//    public void scheduledUpdateBeachesData() {
+//        updateBeachesData();
+//    }
 
 //    @PostConstruct
 //    public void init() {
@@ -177,5 +177,9 @@ public class BeachService {
     // 해수욕장 데이터 가져오기
     public List<Beach> getAllBeaches() {
         return beachRepository.findAll();
+    }
+
+    public Beach getBeachByContentId(Long contentId) {
+        return beachRepository.findByContentId(contentId).orElse(null);
     }
 }
