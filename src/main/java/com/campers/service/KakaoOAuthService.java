@@ -1,6 +1,7 @@
 // src/main/java/com/campers/service/KakaoOAuthService.java
 package com.campers.service;
 
+import com.campers.controller.AuthController;
 import com.campers.dto.KakaoUserResponse;
 import com.campers.entity.User;
 import com.campers.repository.RoleRepository;
@@ -15,6 +16,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +25,7 @@ public class KakaoOAuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final JwtTokenUtil jwtTokenUtil;
+
 
     public Map<String, String> kakaoLogin(String kakaoAccessToken) throws JSONException {
         // 카카오 API를 통해 사용자 정보 가져오기
@@ -63,14 +66,17 @@ public class KakaoOAuthService {
                 }
             }
 
-            // 닉네임이 없을 경우 기본값 설정
-            if (nickName == null || nickName.isEmpty()) {
-                nickName = "카카오사용자";
+            // KakaoOAuthService.java 내 카카오 로그인 처리 부분
+            if (nickName == null || nickName.trim().isEmpty()) {
+                nickName = generateUniqueUserName("user");
+            } else {
+                // 기본적으로 닉네임을 userName으로 사용하되, 중복 시 숫자를 붙여 유니크하게 만듦
+                nickName = generateUniqueUserName(nickName.replaceAll("\\s+", ""));
             }
 
             // 이메일이 없는 경우 고유한 이메일 생성
             if (email == null || email.isEmpty()) {
-                email = "kakao_" + kakaoId + "@kakao.com";
+                email = "kakao_" + kakaoId + "_등록된 이메일이 없습니다.";
             }
 
             // 사용자 정보를 데이터베이스에 저장하거나 업데이트
@@ -118,5 +124,18 @@ public class KakaoOAuthService {
         } else {
             throw new RuntimeException("카카오 사용자 정보 조회 실패: " + response.getStatusCode());
         }
+    }
+
+    private String generateUniqueUserName(String baseName) {
+        int suffix = 1;
+        String userName = baseName;
+        while (userRepository.existsByUserName(userName)) {
+            userName = baseName + suffix;
+            suffix++;
+            if (suffix > 1000) { // 무한 루프 방지를 위한 최대 시도 횟수 설정
+                throw new RuntimeException("고유한 사용자 이름을 생성할 수 없습니다.");
+            }
+        }
+        return userName;
     }
 }

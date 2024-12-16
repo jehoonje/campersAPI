@@ -54,7 +54,7 @@ public class CampgroundService {
 //    }
 
     // 캠핑장 데이터를 업데이트하는 메서드 (스케줄러로 사용할 수 있음)
-    @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Seoul")
+//    @Scheduled(cron = "0 0 0 * * ?", zone = "Asia/Seoul")
     public void updateCampgroundsData() {
         System.out.println("캠핑장 데이터 업데이트 시작...");
         List<Campground> campgrounds = fetchCampgroundsFromApi();
@@ -347,5 +347,9 @@ public class CampgroundService {
     // 데이터베이스에서 모든 캠핑장 데이터를 가져오는 메서드
     public List<Campground> getAllCampgrounds() {
         return campgroundRepository.findAll();
+    }
+
+    public Campground getCampgroundById(Long id) {
+        return campgroundRepository.findById(id).orElse(null);
     }
 }
